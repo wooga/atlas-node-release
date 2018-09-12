@@ -41,6 +41,7 @@ pluginBundle {
     website = 'https://wooga.github.io/atlas-node-release'
     vcsUrl = 'https://github.com/wooga/atlas-node-release'
     tags = ['Wooga', 'release', 'node', 'npm']
+
     plugins {
         nodeRelease {
             id = 'net.wooga.node-release'

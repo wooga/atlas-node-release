@@ -63,17 +63,13 @@ class NodeReleasePlugin implements Plugin<Project> {
     private static void configureReleaseLifecycle(Project project) {
         def tasks = project.tasks
 
-        // Lifecycle hook tasks
         def checkTask = tasks.getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
         def assembleTask = tasks.getByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
-
-        // Base hook tasks
         def cleanTask = tasks.getByName(BasePlugin.CLEAN_TASK_NAME)
-
-        // Release hook tasks
         def postReleaseTask = tasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
+        def releaseTask = tasks.getByName('release')
+        def publishTask = project.tasks.getByName(NPM_PUBLISH_TASK)
 
-        // NPM tasks
         def npmCleanTask = tasks.getByName(NPM_CLEAN_TASK)
         def npmTestTask = tasks.getByName(NPM_TEST_TASK)
         def npmBuildTask = tasks.getByName(NPM_BUILD_TASK)
@@ -81,22 +77,22 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         cleanTask.dependsOn npmCleanTask
         checkTask.dependsOn npmTestTask
+        releaseTask.dependsOn assembleTask
         assembleTask.dependsOn npmBuildTask
         tasks.release.dependsOn assembleTask
+        postReleaseTask.dependsOn npmPublishTask
+        publishTask.mustRunAfter releaseTask
 
-        //TODO: reactivate
-        //postReleaseTask.dependsOn npmPublishTask
     }
 
     private static void configureModifyPackageJsonTask(Project project) {
-        //TODO: set back to publish task
         def publishTask = project.tasks.getByName(NPM_PUBLISH_TASK)
         project.tasks.withType(ModifyPackageJsonTask, new Action<ModifyPackageJsonTask>() {
 
             @Override
             void execute(ModifyPackageJsonTask modifyPackageJsonTask) {
                 configureModifyPackageJsonVersionTask(modifyPackageJsonTask, project)
-                publishTask.finalizedBy modifyPackageJsonTask
+                publishTask.dependsOn modifyPackageJsonTask
             }
         })
     }
@@ -105,7 +101,7 @@ class NodeReleasePlugin implements Plugin<Project> {
         task.group = TASK_GROUP
         task.inputFile = project.file(PACKAGE_JSON)
         task.outputFile = project.file(PACKAGE_JSON)
-        task.config = [version: project.version.toString()]
+        task.config = [version: project.getVersion().toString()]
         task.description = "Set 'package.json' version based on release plugin version"
     }
 }
