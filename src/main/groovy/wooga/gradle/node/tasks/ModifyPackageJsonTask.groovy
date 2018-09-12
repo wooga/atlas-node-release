@@ -27,10 +27,7 @@ class ModifyPackageJsonTask extends DefaultTask {
     @TaskAction
     protected void modify() {
         def inputConfig = new JsonSlurper().parseText(inputFile.text)
-        config.each {
-            inputConfig[it.key] = it.value
-            println("Set " + it.key + ":" + it.value)
-        }
+        config.each { inputConfig[it.key] = it.value }
         def content = new JsonBuilder(inputConfig).toPrettyString()
         outputFile.text = content
     }

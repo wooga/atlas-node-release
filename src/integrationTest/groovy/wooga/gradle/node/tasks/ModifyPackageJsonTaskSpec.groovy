@@ -11,7 +11,7 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
         given: "a valid defined task"
 
-        def inputFile = createFile('package.json')
+        def inputFile = createFile('package.json', projectDir)
 
         inputFile << """{"version":"please.replace.me"}""".stripIndent()
 
@@ -31,7 +31,6 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
         expect: "runs"
         runTasksSuccessfully("test")
-
     }
 
     @Unroll
@@ -39,7 +38,7 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
         given: "a build.gradle with a test task of type ModifyPackageJsonTask"
 
-        def inputFile = createFile('package.json')
+        def inputFile = createFile('package.json', projectDir)
 
         inputFile.text = packageJsonContent([version: "please.replace.me"])
 
@@ -79,7 +78,7 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
         given: "a build.gradle with a test task of type ModifyPackageJsonTask"
 
-        def inputFile = createFile('package.json')
+        def inputFile = createFile('package.json', projectDir)
 
         inputFile.text = packageJsonContent(originFields)
 

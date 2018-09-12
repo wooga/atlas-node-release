@@ -82,7 +82,6 @@ class NodeReleasePlugin implements Plugin<Project> {
         tasks.release.dependsOn assembleTask
         postReleaseTask.dependsOn npmPublishTask
         publishTask.mustRunAfter releaseTask
-
     }
 
     private static void configureModifyPackageJsonTask(Project project) {
