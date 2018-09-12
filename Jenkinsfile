@@ -39,7 +39,7 @@ pipeline {
                     }
 
                     environment {
-                        COVERALLS_REPO_TOKEN                = credentials('atlas_release_coveralls_token')
+                        COVERALLS_REPO_TOKEN                = credentials('atlas_node_release_coveralls_token')
                         TRAVIS_JOB_NUMBER                   = "${BUILD_NUMBER}.WIN"
                         GITHUB                              = credentials('github_integration')
                         ATLAS_GITHUB_INTEGRATION_USER       = "${GITHUB_USR}"
@@ -76,7 +76,7 @@ pipeline {
                     }
 
                     environment {
-                        COVERALLS_REPO_TOKEN                = credentials('atlas_release_coveralls_token')
+                        COVERALLS_REPO_TOKEN                = credentials('atlas_node_release_coveralls_token')
                         TRAVIS_JOB_NUMBER                   = "${BUILD_NUMBER}.MACOS"
                         GITHUB                              = credentials('github_integration')
                         ATLAS_GITHUB_INTEGRATION_USER       = "${GITHUB_USR}"
