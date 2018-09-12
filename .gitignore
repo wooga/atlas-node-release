@@ -3,7 +3,6 @@ build/
 out/
 
 .idea/
-.atlas-node-release.iml
 
 # Ignore Gradle GUI config
 gradle-app.setting
