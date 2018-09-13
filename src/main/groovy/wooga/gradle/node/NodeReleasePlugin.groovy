@@ -55,8 +55,8 @@ class NodeReleasePlugin implements Plugin<Project> {
         project.pluginManager.apply(ReleasePlugin.class)
         ReleasePluginExtension releaseExtension = project.extensions.findByType(ReleasePluginExtension)
         releaseExtension.with {
-            versionStrategy PRE_RELEASE
-            versionStrategy FINAL
+            it.versionStrategy(FINAL)
+            it.versionStrategy PRE_RELEASE
         }
     }
 

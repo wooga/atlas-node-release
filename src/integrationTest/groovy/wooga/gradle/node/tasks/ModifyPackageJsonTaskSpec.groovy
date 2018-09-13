@@ -2,9 +2,8 @@ package wooga.gradle.node.tasks
 
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
-import groovy.json.StringEscapeUtils
-import nebula.test.IntegrationSpec
 import spock.lang.Unroll
+import wooga.gradle.node.IntegrationSpec
 
 class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
@@ -113,17 +112,4 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
         [version: "'0.0.1'"]   | [version: "'1.0.1'"] | [version: "1.0.1"]
         [name: "package-name"] | [version: "'0.0.1'"] | [name: "package-name", version: "0.0.1"]
     }
-
-    private String packageJsonContent(Map<String, Object> content) {
-        new JsonBuilder(content).toPrettyString()
-    }
-
-    def escapedPath(String path) {
-        String osName = System.getProperty("os.name").toLowerCase()
-        if (osName.contains("windows")) {
-            return StringEscapeUtils.escapeJava(path)
-        }
-        path
-    }
-
 }
