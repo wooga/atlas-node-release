@@ -2,6 +2,7 @@ package wooga.gradle.node.tasks
 
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
+import groovy.json.StringEscapeUtils
 import nebula.test.IntegrationSpec
 import spock.lang.Unroll
 
@@ -22,9 +23,9 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
         group = 'test'
         
         task test (type:wooga.gradle.node.tasks.ModifyPackageJsonTask) {
-            inputFile = file('${inputFile}')
+            inputFile = file('${escapedPath(inputFile.path)}')
             config = [version:'1.1.1']
-            outputFile = file('${outputFile}')
+            outputFile = file('${escapedPath(outputFile.path)}')
         }
 
         """.stripIndent()
@@ -49,9 +50,9 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
         group = 'test'
         
         task test (type:wooga.gradle.node.tasks.ModifyPackageJsonTask) {
-            inputFile = file('${inputFile}')
+            inputFile = file('${escapedPath(inputFile.path)}')
             config = ["${inputKey}":"${inputValue}"]
-            outputFile = file('${outputFile}')
+            outputFile = file('${escapedPath(outputFile.path)}')
         }
 
         """.stripIndent()
@@ -89,9 +90,9 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
         group = 'test'
         
         task test (type:wooga.gradle.node.tasks.ModifyPackageJsonTask) {
-            inputFile = file('${inputFile}')
+            inputFile = file('${escapedPath(inputFile.path)}')
             config = ${inputFields}
-            outputFile = file('${outputFile}')
+            outputFile = file('${escapedPath(outputFile.path)}')
         }
 
         """.stripIndent()
@@ -115,6 +116,14 @@ class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
     private String packageJsonContent(Map<String, Object> content) {
         new JsonBuilder(content).toPrettyString()
+    }
+
+    def escapedPath(String path) {
+        String osName = System.getProperty("os.name").toLowerCase()
+        if (osName.contains("windows")) {
+            return StringEscapeUtils.escapeJava(path)
+        }
+        path
     }
 
 }
