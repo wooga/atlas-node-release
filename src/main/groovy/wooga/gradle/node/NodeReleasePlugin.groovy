@@ -1,10 +1,7 @@
 package wooga.gradle.node
 
 import com.moowork.gradle.node.NodePlugin
-import nebula.plugin.release.NetflixOssStrategies
 import nebula.plugin.release.ReleasePlugin
-import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
-import org.ajoberstar.gradle.git.release.semver.SemVerStrategy
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -22,9 +19,6 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String TASK_GROUP = 'Node Release'
 
     static final String PACKAGE_JSON = 'package.json'
-
-    static final SemVerStrategy PRE_RELEASE = NetflixOssStrategies.PRE_RELEASE.copyWith(allowDirtyRepo: true)
-    static final SemVerStrategy FINAL = NetflixOssStrategies.FINAL.copyWith(allowDirtyRepo: true)
 
     @Override
     void apply(Project project) {
@@ -53,11 +47,6 @@ class NodeReleasePlugin implements Plugin<Project> {
 
     private static void applyNebularRelease(Project project) {
         project.pluginManager.apply(ReleasePlugin.class)
-        ReleasePluginExtension releaseExtension = project.extensions.findByType(ReleasePluginExtension)
-        releaseExtension.with {
-            it.versionStrategy(FINAL)
-            it.versionStrategy PRE_RELEASE
-        }
     }
 
     private static void configureReleaseLifecycle(Project project) {

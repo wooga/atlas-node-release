@@ -1,6 +1,5 @@
 package wooga.gradle.node.tasks
 
-import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import spock.lang.Unroll
 import wooga.gradle.node.IntegrationSpec

@@ -6,6 +6,7 @@ import org.jfrog.artifactory.client.Artifactory
 import org.jfrog.artifactory.client.ArtifactoryClientBuilder
 import org.jfrog.artifactory.client.model.RepoPath
 import spock.lang.Shared
+import spock.lang.Unroll
 
 class NodeReleasePluginPublishSpec extends IntegrationSpec {
 
@@ -21,15 +22,14 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
         if (env.containsKey(key)) {
             return env.get(key)
         }
-        return "UNKNOWN-" + UUID.randomUUID().toString()
+        return "UNKNOWN"
     }
 
     @Shared
-    def tag = "@wooga-test"
+    def scope = "@wooga-test"
 
     @Shared
     def packageID = "integration-test-" + uniquePackagePostfix()
-
 
     @Shared
     def artifactoryUrl = "https://wooga.jfrog.io/wooga/"
@@ -38,7 +38,6 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
     Artifactory artifactory
 
     def artifactoryRepoName = "atlas-node-integrationTest"
-    //def repoUrl = "$artifactoryUrl/api/npm/$artifactoryRepoName"
 
     def setupSpec() {
         String artifactoryCredentials = System.getenv("artifactoryCredentials")
@@ -57,6 +56,9 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
 
         new File(projectDir, '.gitignore') << """
         userHome/
+        .gradle
+        .gradle-test-kit
+        .npmrc
         """.stripIndent()
 
         buildFile << """
@@ -67,7 +69,7 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
 
         packageJsonFile = createFile("package.json")
         packageJsonFile.text = packageJsonContent([
-                "name"           : "$tag/$packageID",
+                "name"           : "$scope/$packageID",
                 "version"        : "0.0.0",
                 "scripts"        : ["clean": "shx echo \"clean\"", "test": "shx echo \"test\"", "build": "shx echo \"build\""],
                 "devDependencies": ["shx": "^0.3.2"],
@@ -75,7 +77,7 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
         ])
 
         def npmrcFile = createFile(".npmrc")
-        npmrcFile << "$tag:registry=https://wooga.jfrog.io/wooga/api/npm/" + artifactoryRepoName + "/"
+        npmrcFile << "$scope:registry=https://wooga.jfrog.io/wooga/api/npm/" + artifactoryRepoName + "/"
         npmrcFile << "\n//wooga.jfrog.io/wooga/api/npm/" + artifactoryRepoName + "/:_authToken=" + System.getenv('artifactory_npm_token')
 
         git = Grgit.init(dir: projectDir)
@@ -85,9 +87,7 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
     }
 
     def cleanup() {
-        def config = new JsonSlurper().parseText(packageJsonFile.text)
-        String artifactName = "$packageID-$config.version"
-        cleanupArtifactory(artifactoryRepoName, artifactName)
+        cleanupArtifactory(artifactoryRepoName, packageNameForPackageJson())
     }
 
     def cleanupArtifactory(String repoName, String artifactName) {
@@ -110,11 +110,17 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
                 .artifactsByName(artifactName)
                 .doSearch()
 
-        assert packages.size() == 1
+        assert packages.size() == 2
         true
     }
 
-    def 'builds package and publish a snapshot when running task snapshot'() {
+    def packageNameForPackageJson(){
+        def config = new JsonSlurper().parseText(packageJsonFile.text)
+        "$packageID-$config.version"
+    }
+
+    @Unroll
+    def 'builds and publish a package running task #task with version #version'() {
         given: "the future npm artifact"
         packageJsonFile.exists()
 
@@ -123,11 +129,24 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
         content.text = "hello world"
 
         and:
+        git.add(patterns:['.'])
+        git.commit(message: 'add files')
 
         when: "run the publish task"
-        def result = runTasksSuccessfully("snapshot")
+        def result = runTasks(task, '-Prelease.noTagSync')
+        def config = new JsonSlurper().parseText(packageJsonFile.text)
 
         then:
+        print(result.standardOutput)
+        result.success
         result.wasExecuted("npm_publish")
+        hasPackageOnArtifactory(artifactoryRepoName, packageNameForPackageJson())
+        config.version == version
+        
+        where:
+        task | version
+        "snapshot" | "0.1.0-SNAPSHOT"
+        "candidate" | "0.1.0-rc.1"
+        "release" | "0.1.0"
     }
 }
