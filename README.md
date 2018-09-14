@@ -4,7 +4,6 @@ atlas-node-release
 [![Build Status](https://wooga-shields.herokuapp.com/jenkins/s/https/atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master.svg?style=flat-square)](https://atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master)
 [![Test](https://wooga-shields.herokuapp.com/jenkins/t/https/atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master.svg?style=flat-square)](https://atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master)
 [![GitHub contributors](https://wooga-shields.herokuapp.com/github/contributors/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/graphs/contributors)
-[![GitHub contributors](https://wooga-shields.herokuapp.com/github/contributors/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/graphs/contributors)
 [![GitHub language](https://wooga-shields.herokuapp.com/github/language/wooga/atlas-node-release.svg?style=flat-square)]()
 [![GitHub tag](https://wooga-shields.herokuapp.com/github/tag/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/tags)
 [![GitHub release](https://wooga-shields.herokuapp.com/github/release/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/releases/latest)
