@@ -1,20 +1,48 @@
 atlas-node-release
 ===========
 
-![Wooga Internal](https://img.shields.io/badge/wooga-internal-lightgray.svg?style=flat-square)
-[![Gradle Plugin ID](https://img.shields.io/badge/gradle-net.wooga.github-brightgreen.svg?style=flat-square)](https://plugins.gradle.org/plugin/net.wooga.node-release)
-[![Build Status](https://img.shields.io/travis/wooga/atlas-node-release/master.svg?style=flat-square)](https://travis-ci.org/wooga/atlas-node-release)
-[![Coveralls Status](https://img.shields.io/coveralls/wooga/atlas-node-release/master.svg?style=flat-square)](https://coveralls.io/github/wooga/atlas-node-release?branch=master)
-[![Apache 2.0](https://img.shields.io/badge/license-Apache%202-blue.svg?style=flat-square)](https://raw.githubusercontent.com/wooga/atlas-node-release/master/LICENSE)
-[![GitHub tag](https://img.shields.io/github/tag/wooga/atlas-node-release.svg?style=flat-square)]()
-[![GitHub release](https://img.shields.io/github/release/wooga/atlas-node-release.svg?style=flat-square)]()
+[![Build Status](https://wooga-shields.herokuapp.com/jenkins/s/https/atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master.svg?style=flat-square)](https://atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master)
+[![Test](https://wooga-shields.herokuapp.com/jenkins/t/https/atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master.svg?style=flat-square)](https://atlas-jenkins.wooga.com/job/atlas-plugins/job/atlas-node-release/job/master)
+[![GitHub contributors](https://wooga-shields.herokuapp.com/github/contributors/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/graphs/contributors)
+[![GitHub contributors](https://wooga-shields.herokuapp.com/github/contributors/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/graphs/contributors)
+[![GitHub language](https://wooga-shields.herokuapp.com/github/language/wooga/atlas-node-release.svg?style=flat-square)]()
+[![GitHub tag](https://wooga-shields.herokuapp.com/github/tag/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/tags)
+[![GitHub release](https://wooga-shields.herokuapp.com/github/release/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/releases/latest)
+[![GitHub commits since latest](https://wooga-shields.herokuapp.com/github/commits-since-latest/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/releases/latest)
+[![Github issues](https://wooga-shields.herokuapp.com/github/issues/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/issues)
+[![Github closed issues](https://wooga-shields.herokuapp.com/github/issues-closed-raw/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/issues?q=is%3Aissue+is%3Aclosed)
+[![GitHub pull requests](https://wooga-shields.herokuapp.com/github/issues-pr-raw/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/pulls)
+[![GitHub closed pull requests](https://wooga-shields.herokuapp.com/github/issues-pr-closed-raw/wooga/atlas-node-release.svg?style=flat-square)](https://github.com/wooga/atlas-node-release/pulls)
 
-This plugin provides opinions and tasks for the release process of npm packages.
+This plugin hooks up [gradle-node-plugin](https://github.com/srs/gradle-node-plugin) with [nebula-release-plugin](https://github.com/nebula-plugins/nebula-release-plugin) to make [semver 2](https://semver.org/) versioned npm releases easier.
+
+Applying the plugin
+===================
+**build.gradle**
+```groovy
+plugins {
+    id 'net.wooga.node-release' version '0.+'
+}
+```
+
+Conventions
+===========
+* Applies [nebula.release](https://github.com/nebula-plugins/nebula-release-plugin)
+* Applies [com.moowork.node](https://github.com/nebula-plugins/nebula-release-plugin)
+* Expects a valid `package.json` on project root.
+* Expects `clean`, `test` and `build` task in `scripts` block of `package.json`
+* Expects existence of a git repository with remote origin
+
+Documentation
+=============
+- [API docs](https://wooga.github.io/atlas-node-release/docs/api/)
+- [Release Notes](RELEASE_NOTES.md)
+
 
 LICENSE
 =======
 
-Copyright 2017 Wooga GmbH
+Copyright 2018 Wooga GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
