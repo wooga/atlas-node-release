@@ -16,103 +16,28 @@
  * limitations under the License.
  *
  */
+ @Library('github.com/wooga/atlas-jenkins-pipeline@1.x') _
 
-@Library('github.com/wooga/atlas-jenkins-pipeline@0.0.3') _
+ withCredentials([usernameColonPassword(credentialsId: 'artifactory_publish', variable: 'artifactory_publish'),
+                  string(credentialsId: 'artifactory_npm_token', variable: 'npm_token'),
+                  usernamePassword(credentialsId: 'github_integration', passwordVariable: 'githubPassword', usernameVariable: 'githubUser'),
+                  usernamePassword(credentialsId: 'github_integration_2', passwordVariable: 'githubPassword2', usernameVariable: 'githubUser2'),
+                  string(credentialsId: 'atlas_node_release_coveralls_token', variable: 'coveralls_token')]) {
 
-pipeline {
-    agent none
+     def testEnvironment = [
+                                'osx' : [
+                                            "artifactoryCredentials=${artifactory_publish}",
+                                            "artifactory_npm_token=${npm_token}",
+                                            "ATLAS_GITHUB_INTEGRATION_USER=${githubUser}",
+                                            "ATLAS_GITHUB_INTEGRATION_USER=${githubPassword}"
+                                ],
+                                'windows' : [
+                                            "artifactoryCredentials=${artifactory_publish}",
+                                            "artifactory_npm_token=${npm_token}",
+                                            "ATLAS_GITHUB_INTEGRATION_USER=${githubUser2}",
+                                            "ATLAS_GITHUB_INTEGRATION_USER=${githubPassword2}"
+                                ]
+                            ]
 
-    stages {
-        stage('Preparation') {
-            agent any
-
-            steps {
-                sendSlackNotification "STARTED", true
-            }
-        }
-
-        stage('check') {
-            parallel {
-                stage('Windows') {
-                    agent {
-                        label 'windows&&atlas'
-                    }
-
-                    environment {
-                        COVERALLS_REPO_TOKEN                = credentials('atlas_node_release_coveralls_token')
-                        TRAVIS_JOB_NUMBER                   = "${BUILD_NUMBER}.WIN"
-                        GITHUB                              = credentials('github_integration')
-                        ATLAS_GITHUB_INTEGRATION_USER       = "${GITHUB_USR}"
-                        ATLAS_GITHUB_INTEGRATION_PASSWORD   = "${GITHUB_PSW}"
-                    }
-
-                    steps {
-                        gradleWrapper "check"
-                    }
-
-                    post {
-                        success {
-                            gradleWrapper "jacocoTestReport coveralls"
-                            publishHTML([
-                                allowMissing: true,
-                                alwaysLinkToLastBuild: true,
-                                keepAll: true,
-                                reportDir: 'build/reports/jacoco/test/html',
-                                reportFiles: 'index.html',
-                                reportName: 'Coverage',
-                                reportTitles: ''
-                            ])
-                        }
-
-                        always {
-                            junit allowEmptyResults: true, testResults: 'build/test-results/**/*.xml'
-                        }
-                    }
-                }
-
-                stage('macOS') {
-                    agent {
-                        label 'osx&&atlas&&secondary'
-                    }
-
-                    environment {
-                        COVERALLS_REPO_TOKEN                = credentials('atlas_node_release_coveralls_token')
-                        TRAVIS_JOB_NUMBER                   = "${BUILD_NUMBER}.MACOS"
-                        GITHUB                              = credentials('github_integration')
-                        ATLAS_GITHUB_INTEGRATION_USER       = "${GITHUB_USR}"
-                        ATLAS_GITHUB_INTEGRATION_PASSWORD   = "${GITHUB_PSW}"
-                    }
-
-                    steps {
-                        gradleWrapper "check"
-                    }
-
-                    post {
-                        success {
-                            gradleWrapper "jacocoTestReport coveralls"
-                            publishHTML([
-                                allowMissing: true,
-                                alwaysLinkToLastBuild: true,
-                                keepAll: true,
-                                reportDir: 'build/reports/jacoco/test/html',
-                                reportFiles: 'index.html',
-                                reportName: 'Coverage',
-                                reportTitles: ''
-                            ])
-                        }
-
-                        always {
-                            junit allowEmptyResults: true, testResults: 'build/test-results/**/*.xml'
-                        }
-                    }
-                }
-            }
-
-            post {
-                always {
-                    sendSlackNotification currentBuild.result, true
-                }
-            }
-        }
-    }
-}
+     buildGradlePlugin plaforms: ['osx','windows'], coverallsToken: coveralls_token, testEnvironment: testEnvironment
+ }
