@@ -22,6 +22,8 @@ import org.ajoberstar.grgit.Grgit
 import org.jfrog.artifactory.client.Artifactory
 import org.jfrog.artifactory.client.ArtifactoryClientBuilder
 import org.jfrog.artifactory.client.model.RepoPath
+import org.junit.Rule
+import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.Shared
 import spock.lang.Unroll
 
@@ -56,6 +58,9 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
     def artifactoryRepoName = "atlas-node-integrationTest"
 
+    @Rule
+    public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
+
     def setupSpec() {
         String artifactoryCredentials = System.getenv("artifactoryCredentials")
         assert artifactoryCredentials
@@ -70,6 +75,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     Grgit git
 
     def setup() {
+        environmentVariables.set("GRGIT_USER", testUserName)
+        environmentVariables.set("GRGIT_PASS", testUserToken)
 
         new File(projectDir, '.gitignore') << """
         userHome/
