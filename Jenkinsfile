@@ -29,13 +29,13 @@
                                             "artifactoryCredentials=${artifactory_publish}",
                                             "artifactory_npm_token=${npm_token}",
                                             "ATLAS_GITHUB_INTEGRATION_USER=${githubUser}",
-                                            "ATLAS_GITHUB_INTEGRATION_USER=${githubPassword}"
+                                            "ATLAS_GITHUB_INTEGRATION_PASSWORD=${githubPassword}"
                                 ],
                                 'windows' : [
                                             "artifactoryCredentials=${artifactory_publish}",
                                             "artifactory_npm_token=${npm_token}",
                                             "ATLAS_GITHUB_INTEGRATION_USER=${githubUser2}",
-                                            "ATLAS_GITHUB_INTEGRATION_USER=${githubPassword2}"
+                                            "ATLAS_GITHUB_INTEGRATION_PASSWORD=${githubPassword2}"
                                 ]
                             ]
 
