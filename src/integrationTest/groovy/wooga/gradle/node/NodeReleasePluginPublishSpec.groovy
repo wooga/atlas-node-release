@@ -81,7 +81,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         buildFile << """
             group = 'test'
             version = "$version"
-            ${applyPlugin(NodeReleasePlugin)}   
+            ${applyPlugin(NodeReleasePlugin)}    
+            node.version = '10.5.0'
             node.download = true
         """.stripIndent()
 
