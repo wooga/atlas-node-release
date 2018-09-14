@@ -25,7 +25,7 @@ import org.jfrog.artifactory.client.model.RepoPath
 import spock.lang.Shared
 import spock.lang.Unroll
 
-class NodeReleasePluginPublishSpec extends IntegrationSpec {
+class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
     @Shared
     File packageJsonFile
@@ -33,7 +33,7 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
     @Shared
     def version = "1.0.0"
 
-    def uniquePackagePostfix() {
+    String uniquePostfix() {
         String key = "TRAVIS_JOB_NUMBER"
         def env = System.getenv()
         if (env.containsKey(key)) {
@@ -46,7 +46,7 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
     def scope = "@wooga-test"
 
     @Shared
-    def packageID = "integration-test-" + uniquePackagePostfix()
+    def packageID = "integration-test-" + uniquePostfix()
 
     @Shared
     def artifactoryUrl = "https://wooga.jfrog.io/wooga/"
@@ -101,7 +101,7 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
         git.add(patterns: ['.gitignore'])
         git.commit(message: 'initial commit')
         git.tag.add(name: 'v0.0.1')
-    }
+        git.remote.add(name: "origin", url: "https://github.com/${testRepositoryName}.git")    }
 
     def cleanup() {
         cleanupArtifactory(artifactoryRepoName, packageNameForPackageJson())
@@ -127,11 +127,11 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
                 .artifactsByName(artifactName)
                 .doSearch()
 
-        assert packages.size() == 2
+        assert packages.size() >= 2
         true
     }
 
-    def packageNameForPackageJson(){
+    def packageNameForPackageJson() {
         def config = new JsonSlurper().parseText(packageJsonFile.text)
         "$packageID-$config.version"
     }
@@ -146,11 +146,11 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
         content.text = "hello world"
 
         and:
-        git.add(patterns:['.'])
+        git.add(patterns: ['.'])
         git.commit(message: 'add files')
 
         when: "run the publish task"
-        def result = runTasks(task, '-Prelease.noTagSync')
+        def result = runTasks(task)
         def config = new JsonSlurper().parseText(packageJsonFile.text)
 
         then:
@@ -159,11 +159,11 @@ class NodeReleasePluginPublishSpec extends IntegrationSpec {
         result.wasExecuted("npm_publish")
         hasPackageOnArtifactory(artifactoryRepoName, packageNameForPackageJson())
         config.version == version
-        
+
         where:
-        task | version
-        "snapshot" | "0.1.0-SNAPSHOT"
+        task        | version
+        "snapshot"  | "0.1.0-SNAPSHOT"
         "candidate" | "0.1.0-rc.1"
-        "release" | "0.1.0"
+        "final"   | "0.1.0"
     }
 }

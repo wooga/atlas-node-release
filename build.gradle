@@ -34,6 +34,7 @@ dependencies {
     testCompile('org.jfrog.artifactory.client:artifactory-java-client-services:2.+') {
         exclude module: 'logback-classic'
     }
+    testCompile 'org.kohsuke:github-api:latest.release'
 
     compile 'com.netflix.nebula:nebula-release-plugin:6.+'
     compile 'com.moowork.gradle:gradle-node-plugin:1.2.0'
