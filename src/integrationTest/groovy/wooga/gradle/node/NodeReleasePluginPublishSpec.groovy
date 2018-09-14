@@ -81,7 +81,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         buildFile << """
             group = 'test'
             version = "$version"
-            ${applyPlugin(NodeReleasePlugin)}
+            ${applyPlugin(NodeReleasePlugin)}   
+            node.download = true
         """.stripIndent()
 
         packageJsonFile = createFile("package.json")
@@ -101,7 +102,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         git.add(patterns: ['.gitignore'])
         git.commit(message: 'initial commit')
         git.tag.add(name: 'v0.0.1')
-        git.remote.add(name: "origin", url: "https://github.com/${testRepositoryName}.git")    }
+        git.remote.add(name: "origin", url: "https://github.com/${testRepositoryName}.git")
+    }
 
     def cleanup() {
         cleanupArtifactory(artifactoryRepoName, packageNameForPackageJson())
@@ -164,6 +166,6 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         task        | version
         "snapshot"  | "0.1.0-SNAPSHOT"
         "candidate" | "0.1.0-rc.1"
-        "final"   | "0.1.0"
+        "final"     | "0.1.0"
     }
 }
