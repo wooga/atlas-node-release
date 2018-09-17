@@ -25,6 +25,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
+import wooga.gradle.node.tasks.NpmCredentialsTask
 
 class NodeReleasePlugin implements Plugin<Project> {
 
@@ -46,6 +47,7 @@ class NodeReleasePlugin implements Plugin<Project> {
             applyNebularRelease(project)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonTask(project)
+            configureNpmCredentialsTask(project)
         }
 
         project.afterEvaluate {
@@ -108,5 +110,21 @@ class NodeReleasePlugin implements Plugin<Project> {
         task.outputFile = project.file(PACKAGE_JSON)
         task.config = [version: project.getVersion().toString()]
         task.description = "Set 'package.json' version based on release plugin version"
+    }
+
+    private void configureNpmCredentialsTask(Project project) {
+        project.tasks.withType(NpmCredentialsTask, new Action<NpmCredentialsTask>() {
+
+            @Override
+            void execute(NpmCredentialsTask npmCredentialsTask) {
+                npmCredentialsTask.group = TASK_GROUP
+                if (npmCredentialsTask.credentials == null) {
+                    npmCredentialsTask.credentials = "'${Systen.env['NPM_LOGIN']}'"
+                }
+                if (npmCredentialsTask.authenticationUrl == null) {
+                    npmCredentialsTask.authenticationUrl = "'${Systen.env['NPM_AUTH_URL']}'"
+                }
+            }
+        })
     }
 }

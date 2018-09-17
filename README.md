@@ -31,11 +31,30 @@ Conventions
 * Expects a valid `package.json` on project root.
 * Expects `clean`, `test` and `build` task in `scripts` block of `package.json`
 * Expects existence of a git repository with remote origin
+* Expects existence of a [`.npmrc`](https://docs.npmjs.com/files/npmrc) file in project or user scope.
+* Expects [`.npmrc`](https://docs.npmjs.com/files/npmrc) to be ignored by git.
 
 Documentation
 =============
 - [API docs](https://wooga.github.io/atlas-node-release/docs/api/)
 - [Release Notes](RELEASE_NOTES.md)
+- Tasks
+	- [NpmCredentialsTask](#npmcredentialstask)
+
+Usage
+=====
+
+## NpmCredentialsTask
+This task can be used to create a npm configuration file.
+
+**Example Configuration:**
+```groovy
+task example (type:wooga.gradle.node.tasks.NpmCredentialsTask) {
+	credentials = 'username:password'
+	authenticationUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
+	npmrcFile = file('.npmrc')
+}
+```
 
 
 LICENSE
