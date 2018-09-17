@@ -23,7 +23,7 @@ import wooga.gradle.node.IntegrationSpec
 
 class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
-    def "run modifyPackageJsonTask successfully"() {
+    def "run ModifyPackageJsonTask successfully"() {
 
         given: "a valid defined task"
 
