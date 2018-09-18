@@ -19,6 +19,8 @@ package wooga.gradle.node.tasks
 
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -27,13 +29,13 @@ import org.gradle.process.ExecSpec
 class NpmCredentialsTask extends DefaultTask {
 
     @Input
-    String credentials
+    final Property<String> npmLogin = project.objects.property(String)
 
     @Input
-    String authenticationUrl
+    final Property<String> npmAuthUrl = project.objects.property(String)
 
     @OutputFile
-    File npmrcFile
+    final RegularFileProperty npmrcFile = newOutputFile()
 
     @TaskAction
     protected void exec() {
@@ -42,7 +44,7 @@ class NpmCredentialsTask extends DefaultTask {
 
             @Override
             void execute(ExecSpec execSpec) {
-                execSpec.commandLine 'curl', '-u', credentials, authenticationUrl
+                execSpec.commandLine 'curl', '-u', npmLogin.get(), npmAuthUrl.get()
                 execSpec.standardOutput = output
             }
         })
@@ -52,16 +54,17 @@ class NpmCredentialsTask extends DefaultTask {
 
     def MaybeSetCredentials(String content) {
 
+        def outputFile = npmrcFile.asFile.get()
         def contentLines = content.readLines()
 
-        if (npmrcFile.exists()) {
-            def fileContentLines = npmrcFile.text.readLines()
+        if (outputFile.exists()) {
+            def fileContentLines = outputFile.text.readLines()
             if (fileContentLines.contains(contentLines.first())) {
                 println("registry already set")
                 return
             }
         }
 
-        npmrcFile << content
+        outputFile << content
     }
 }

@@ -34,25 +34,44 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String NPM_TEST_TASK = 'npm_run_test'
     static final String NPM_PUBLISH_TASK = 'npm_publish'
 
+    static final String MODIFY_PACKAGE_VERSION_TASK = 'modifyPackageJson_version'
+    static final String CREATE_CREDENTIALS_TASK = 'npmCreateCredentialsTask'
+
+    static final String PLUGIN_EXTENSION = 'nodeRelease'
+
     static final String TASK_GROUP = 'Node Release'
 
     static final String PACKAGE_JSON = 'package.json'
 
+    private NodeReleasePluginExtension extension
+
     @Override
     void apply(Project project) {
+
         applyBase(project)
         applyGradleNode(project)
+
+        extension = project.extensions.create(PLUGIN_EXTENSION, NodeReleasePluginExtension, project)
+        extension.npmLogin.set(System.getenv('NODE_RELEASE_NPM_LOGIN'))
+        extension.npmAuthUrl.set(System.getenv('NODE_RELEASE_NPM_AUTH_URL'))
+        extension.npmrcFile.set(project.file('.npmrc'))
 
         if (project == project.rootProject) {
             applyNebularRelease(project)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonTask(project)
-            configureNpmCredentialsTask(project)
+            configureNpmCredentialsTasks(project, extension)
         }
 
         project.afterEvaluate {
-            def task = project.tasks.create('ModifyPackageJson_version', ModifyPackageJsonTask.class)
-            configureModifyPackageJsonVersionTask(task, project)
+
+            println("project.afterEvaluate")
+
+            def modifyPackageJsonVersionTask = project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
+            configureModifyPackageJsonVersionTask(modifyPackageJsonVersionTask, project)
+
+            def createCredentialsTask = project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
+            configureNpmCredentialsTask(project, extension, createCredentialsTask)
         }
     }
 
@@ -112,19 +131,21 @@ class NodeReleasePlugin implements Plugin<Project> {
         task.description = "Set 'package.json' version based on release plugin version"
     }
 
-    private void configureNpmCredentialsTask(Project project) {
+    private void configureNpmCredentialsTasks(Project project, NodeReleasePluginExtension extension) {
         project.tasks.withType(NpmCredentialsTask, new Action<NpmCredentialsTask>() {
 
             @Override
             void execute(NpmCredentialsTask npmCredentialsTask) {
-                npmCredentialsTask.group = TASK_GROUP
-                if (npmCredentialsTask.credentials == null) {
-                    npmCredentialsTask.credentials = "'${Systen.env['NPM_LOGIN']}'"
-                }
-                if (npmCredentialsTask.authenticationUrl == null) {
-                    npmCredentialsTask.authenticationUrl = "'${Systen.env['NPM_AUTH_URL']}'"
-                }
+                configureNpmCredentialsTask(project, extension, npmCredentialsTask)
             }
         })
+    }
+
+    private void configureNpmCredentialsTask(Project project, NodeReleasePluginExtension extension, NpmCredentialsTask npmCredentialsTask) {
+        npmCredentialsTask.group = TASK_GROUP
+        npmCredentialsTask.description = "create '.npmrc' file"
+        npmCredentialsTask.npmLogin.set(extension.npmLogin)
+        npmCredentialsTask.npmAuthUrl.set(extension.npmAuthUrl)
+        npmCredentialsTask.npmrcFile.set(extension.npmrcFile)
     }
 }

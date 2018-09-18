@@ -31,8 +31,6 @@ Conventions
 * Expects a valid `package.json` on project root.
 * Expects `clean`, `test` and `build` task in `scripts` block of `package.json`
 * Expects existence of a git repository with remote origin
-* Expects existence of a [`.npmrc`](https://docs.npmjs.com/files/npmrc) file in project or user scope.
-* Expects [`.npmrc`](https://docs.npmjs.com/files/npmrc) to be ignored by git.
 
 Documentation
 =============
@@ -50,12 +48,18 @@ This task can be used to create a npm configuration file.
 **Example Configuration:**
 ```groovy
 task example (type:wooga.gradle.node.tasks.NpmCredentialsTask) {
-	credentials = 'username:password'
-	authenticationUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
-	npmrcFile = file('.npmrc')
+	npmLogin = 'username:password'
+	npmAuthUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
 }
 ```
+you can optionally set `npmrcFile` to define the target location. By default it's set to project root
 
+**Environment Variables:**
+
+`wooga.gradle.node.tasks.NpmCredentialsTask` properties can also be set by environment variables:
+
+- `NODE_RELEASE_NPM_LOGIN` npm user:password or user:token 
+- `NODE_RELEASE_NPM_AUTH_URL` npm authentication url
 
 LICENSE
 =======
