@@ -31,8 +31,8 @@
                                             "artifactory_npm_token=${npm_token}",
                                             "ATLAS_GITHUB_INTEGRATION_USER=${githubUser}",
                                             "ATLAS_GITHUB_INTEGRATION_PASSWORD=${githubPassword}",
-                                            "NODE_RELEASE_NPM_USER_TEST=${githnpm_test_credentials_user}",
-                                            "NODE_RELEASE_NPM_PASS_TEST=${githnpm_test_credentials_pass}",
+                                            "NODE_RELEASE_NPM_USER_TEST=${npm_test_credentials_user}",
+                                            "NODE_RELEASE_NPM_PASS_TEST=${npm_test_credentials_pass}",
                                             "NODE_RELEASE_NPM_AUTH_URL_TEST=https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga"
                                 ],
                                 'windows' : [
@@ -40,8 +40,8 @@
                                             "artifactory_npm_token=${npm_token}",
                                             "ATLAS_GITHUB_INTEGRATION_USER=${githubUser2}",
                                             "ATLAS_GITHUB_INTEGRATION_PASSWORD=${githubPassword2}",
-                                            "NODE_RELEASE_NPM_USER_TEST=${githnpm_test_credentials_user}",
-                                            "NODE_RELEASE_NPM_PASS_TEST=${githnpm_test_credentials_pass}",
+                                            "NODE_RELEASE_NPM_USER_TEST=${npm_test_credentials_user}",
+                                            "NODE_RELEASE_NPM_PASS_TEST=${npm_test_credentials_pass}",
                                             "NODE_RELEASE_NPM_AUTH_URL_TEST=https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga"
                                 ]
                             ]
