@@ -17,6 +17,7 @@
 
 package wooga.gradle.node.tasks
 
+import groovy.json.JsonSlurper
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
@@ -29,7 +30,10 @@ import org.gradle.process.ExecSpec
 class NpmCredentialsTask extends DefaultTask {
 
     @Input
-    final Property<String> npmLogin = project.objects.property(String)
+    final Property<String> npmUser = project.objects.property(String)
+
+    @Input
+    final Property<String> npmPass = project.objects.property(String)
 
     @Input
     final Property<String> npmAuthUrl = project.objects.property(String)
@@ -44,19 +48,29 @@ class NpmCredentialsTask extends DefaultTask {
 
             @Override
             void execute(ExecSpec execSpec) {
-                execSpec.commandLine 'curl', '-u', npmLogin.get(), npmAuthUrl.get()
+                execSpec.commandLine 'curl', '-u', npmUser.get() + ":" + npmPass.get(), npmAuthUrl.get()
                 execSpec.standardOutput = output
             }
         })
-
+        validateResult(output.toString())
         MaybeSetCredentials(output.toString())
+    }
+
+    static def validateResult(String content) {
+        try {
+            def resultJson = new JsonSlurper().parseText(content)
+            throw new Error("Failed npm login: ${resultJson['errors'][0]['message']}")
+
+        } catch (Exception e) {
+            //valid result is no json
+        }
     }
 
     def MaybeSetCredentials(String content) {
 
         def outputFile = npmrcFile.asFile.get()
         String npmRegistryStart = content.readLines().first()
-        
+
         if (outputFile.exists()) {
             def fileContentLines = outputFile.readLines()
             if (fileContentLines.contains(npmRegistryStart)) {

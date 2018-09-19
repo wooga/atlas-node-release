@@ -35,6 +35,7 @@ dependencies {
         exclude module: 'logback-classic'
     }
     testCompile 'org.kohsuke:github-api:latest.release'
+    testCompile 'com.github.stefanbirkner:system-rules:1.18.0'
 
     compile 'com.netflix.nebula:nebula-release-plugin:6.+'
     compile 'com.moowork.gradle:gradle-node-plugin:1.2.0'
