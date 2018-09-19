@@ -48,8 +48,8 @@ class NodeReleasePlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
 
-        applyBase(project)
-        applyGradleNode(project)
+        project.pluginManager.apply(BasePlugin.class)
+        project.pluginManager.apply(NodePlugin.class)
 
         extension = project.extensions.create(PLUGIN_EXTENSION, NodeReleasePluginExtension, project)
         extension.npmLogin.set(System.getenv('NODE_RELEASE_NPM_LOGIN'))
@@ -57,34 +57,17 @@ class NodeReleasePlugin implements Plugin<Project> {
         extension.npmrcFile.set(project.file('.npmrc'))
 
         if (project == project.rootProject) {
-            applyNebularRelease(project)
+            project.pluginManager.apply(ReleasePlugin.class)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonTask(project)
             configureNpmCredentialsTasks(project, extension)
         }
 
-        project.afterEvaluate {
+        def modifyPackageJsonVersionTask = project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
+        configureModifyPackageJsonVersionTask(modifyPackageJsonVersionTask, project)
 
-            println("project.afterEvaluate")
-
-            def modifyPackageJsonVersionTask = project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
-            configureModifyPackageJsonVersionTask(modifyPackageJsonVersionTask, project)
-
-            def createCredentialsTask = project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
-            configureNpmCredentialsTask(project, extension, createCredentialsTask)
-        }
-    }
-
-    private static void applyBase(Project project) {
-        project.pluginManager.apply(BasePlugin.class)
-    }
-
-    private static void applyGradleNode(Project project) {
-        project.pluginManager.apply(NodePlugin.class)
-    }
-
-    private static void applyNebularRelease(Project project) {
-        project.pluginManager.apply(ReleasePlugin.class)
+        def createCredentialsTask = project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
+        configureNpmCredentialsTask(project, extension, createCredentialsTask)
     }
 
     private static void configureReleaseLifecycle(Project project) {

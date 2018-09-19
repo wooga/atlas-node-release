@@ -55,11 +55,11 @@ class NpmCredentialsTask extends DefaultTask {
     def MaybeSetCredentials(String content) {
 
         def outputFile = npmrcFile.asFile.get()
-        def contentLines = content.readLines()
-
+        String npmRegistryStart = content.readLines().first()
+        
         if (outputFile.exists()) {
-            def fileContentLines = outputFile.text.readLines()
-            if (fileContentLines.contains(contentLines.first())) {
+            def fileContentLines = outputFile.readLines()
+            if (fileContentLines.contains(npmRegistryStart)) {
                 println("registry already set")
                 return
             }
