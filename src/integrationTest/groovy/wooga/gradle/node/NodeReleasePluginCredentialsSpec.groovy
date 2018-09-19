@@ -173,9 +173,9 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
 
         and: 'properties defined in properties file'
         new File(projectDir, 'gradle.properties') << """
-        npmUser=${npmUser}
-        npmPass=${npmPass}
-        npmAuthUrl=${npmAuthUrl}
+        nodeRelease.npmUser=${npmUser}
+        nodeRelease.npmPass=${npmPass}
+        nodeRelease.npmAuthUrl=${npmAuthUrl}
         """.stripIndent().trim()
 
         then: "runs"

@@ -71,9 +71,9 @@ class NodeReleasePlugin implements Plugin<Project> {
 
     private NodeReleasePluginExtension createExtension(Project project) {
         extension = project.extensions.create(PLUGIN_EXTENSION, NodeReleasePluginExtension, project)
-        extension.npmUser.set(getConfigProperty(project, 'npmUser', NODE_RELEASE_NPM_USER_ENV_VAR))
-        extension.npmPass.set(getConfigProperty(project, 'npmPass', NODE_RELEASE_NPM_PASS_ENV_VAR))
-        extension.npmAuthUrl.set(getConfigProperty(project, 'npmAuthUrl', NODE_RELEASE_NPM_AUTH_URL_ENV_VAR))
+        extension.npmUser.set(getConfigProperty(project, 'nodeRelease.npmUser', NODE_RELEASE_NPM_USER_ENV_VAR))
+        extension.npmPass.set(getConfigProperty(project, 'nodeRelease.npmPass', NODE_RELEASE_NPM_PASS_ENV_VAR))
+        extension.npmAuthUrl.set(getConfigProperty(project, 'nodeRelease.npmAuthUrl', NODE_RELEASE_NPM_AUTH_URL_ENV_VAR))
         extension.npmrcFile.set(project.file(NPMRC))
         extension
     }
