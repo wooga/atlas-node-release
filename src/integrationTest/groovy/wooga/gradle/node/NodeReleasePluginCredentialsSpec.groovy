@@ -179,7 +179,7 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         """.stripIndent().trim()
 
         then: "runs"
-        runTasksSuccessfully("npmCreateCredentialsTask")
+        runTasksSuccessfully("ensureNpmrc")
     }
 
     def "run NpmCredentialsTask successfully with extension.properties"() {
@@ -200,7 +200,7 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         """.stripIndent()
 
         then: "runs"
-        runTasksSuccessfully("npmCreateCredentialsTask")
+        runTasksSuccessfully("ensureNpmrc")
     }
 
 }

@@ -35,7 +35,7 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String NPM_PUBLISH_TASK = 'npm_publish'
 
     static final String MODIFY_PACKAGE_VERSION_TASK = 'modifyPackageJson_version'
-    static final String CREATE_CREDENTIALS_TASK = 'npmCreateCredentialsTask'
+    static final String CREATE_CREDENTIALS_TASK = 'ensureNpmrc'
 
     static final String PLUGIN_EXTENSION = 'nodeRelease'
 

@@ -42,13 +42,32 @@ Documentation
 Usage
 =====
 
-## NpmCredentialsTask
-This task can be used to create a npm configuration file.
+**build.gradle**
+```groovy
+plugins {
+    id 'net.wooga.node-release' version '0.1.0'
+}
+
+nodeRelease {
+	npmUser = 'username'
+	npmPass = 'password'
+	npmAuthUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
+}
+
+project.npmSetup.dependsOn ensureNpmrc
+```
+
+Run on of the release tasks defined by [nebular.release](https://github.com/nebula-plugins/nebula-release-plugin#lifecycle-hooks): `devSnapshot`, `snapshot`, `candidate` or `release`
+
+
+### NpmCredentialsTask
+This task type can be used to create a npm configuration file (`.npmrc`). By default `ensureNpmrc` is not hooked up to any lifecycle or release related tasks. If you in need of this task, please hook it up yourself or create your own instance. 
 
 **Example Configuration:**
 ```groovy
 task example (type:wooga.gradle.node.tasks.NpmCredentialsTask) {
-	npmLogin = 'username:password'
+	npmUser = 'username'
+	npmPass = 'password'
 	npmAuthUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
 }
 ```
@@ -58,8 +77,17 @@ you can optionally set `npmrcFile` to define the target location. By default it'
 
 `wooga.gradle.node.tasks.NpmCredentialsTask` properties can also be set by environment variables:
 
-- `NODE_RELEASE_NPM_LOGIN` npm user:password or user:token 
+- `NODE_RELEASE_NPM_USER` npm username 
+- `NODE_RELEASE_NPM_PASS` npm password
 - `NODE_RELEASE_NPM_AUTH_URL` npm authentication url
+
+**npmrc file:**
+```groovy
+// set npmrc to system level
+nodeRelease {
+	npmrc = file('~/.npmrc')
+}
+```
 
 LICENSE
 =======
