@@ -25,6 +25,7 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
+import wooga.gradle.node.tasks.NpmCredentialsTask
 
 class NodeReleasePlugin implements Plugin<Project> {
 
@@ -33,37 +34,55 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String NPM_TEST_TASK = 'npm_run_test'
     static final String NPM_PUBLISH_TASK = 'npm_publish'
 
+    static final String MODIFY_PACKAGE_VERSION_TASK = 'modifyPackageJson_version'
+    static final String CREATE_CREDENTIALS_TASK = 'ensureNpmrc'
+
+    static final String PLUGIN_EXTENSION = 'nodeRelease'
+
     static final String TASK_GROUP = 'Node Release'
 
     static final String PACKAGE_JSON = 'package.json'
+    static final String NPMRC = '.npmrc'
+
+    static final String NODE_RELEASE_NPM_USER_ENV_VAR = 'NODE_RELEASE_NPM_USER'
+    static final String NODE_RELEASE_NPM_PASS_ENV_VAR = 'NODE_RELEASE_NPM_PASS'
+    static final String NODE_RELEASE_NPM_AUTH_URL_ENV_VAR = 'NODE_RELEASE_NPM_AUTH_URL'
+
+    private NodeReleasePluginExtension extension
 
     @Override
     void apply(Project project) {
-        applyBase(project)
-        applyGradleNode(project)
+
+        project.pluginManager.apply(BasePlugin.class)
+        project.pluginManager.apply(NodePlugin.class)
+
+        extension = createExtension(project)
 
         if (project == project.rootProject) {
-            applyNebularRelease(project)
+            project.pluginManager.apply(ReleasePlugin.class)
             configureReleaseLifecycle(project)
-            configureModifyPackageJsonTask(project)
+            configureModifyPackageJsonVersionTask(project)
+            configureNpmCredentialsTasks(project, extension)
         }
 
-        project.afterEvaluate {
-            def task = project.tasks.create('ModifyPackageJson_version', ModifyPackageJsonTask.class)
-            configureModifyPackageJsonVersionTask(task, project)
+        project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
+        project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
+    }
+
+    private NodeReleasePluginExtension createExtension(Project project) {
+        extension = project.extensions.create(PLUGIN_EXTENSION, NodeReleasePluginExtension, project)
+        extension.npmUser.set(getConfigProperty(project, 'nodeRelease.npmUser', NODE_RELEASE_NPM_USER_ENV_VAR))
+        extension.npmPass.set(getConfigProperty(project, 'nodeRelease.npmPass', NODE_RELEASE_NPM_PASS_ENV_VAR))
+        extension.npmAuthUrl.set(getConfigProperty(project, 'nodeRelease.npmAuthUrl', NODE_RELEASE_NPM_AUTH_URL_ENV_VAR))
+        extension.npmrcFile.set(project.file(NPMRC))
+        extension
+    }
+
+    private static String getConfigProperty(Project project, String name, String envName) {
+        if (project.hasProperty(name)) {
+            return project.properties[name].toString()
         }
-    }
-
-    private static void applyBase(Project project) {
-        project.pluginManager.apply(BasePlugin.class)
-    }
-
-    private static void applyGradleNode(Project project) {
-        project.pluginManager.apply(NodePlugin.class)
-    }
-
-    private static void applyNebularRelease(Project project) {
-        project.pluginManager.apply(ReleasePlugin.class)
+        return System.getenv(envName)
     }
 
     private static void configureReleaseLifecycle(Project project) {
@@ -90,23 +109,34 @@ class NodeReleasePlugin implements Plugin<Project> {
         publishTask.mustRunAfter releaseTask
     }
 
-    private static void configureModifyPackageJsonTask(Project project) {
+    private static void configureModifyPackageJsonVersionTask(Project project) {
         def publishTask = project.tasks.getByName(NPM_PUBLISH_TASK)
         project.tasks.withType(ModifyPackageJsonTask, new Action<ModifyPackageJsonTask>() {
 
             @Override
             void execute(ModifyPackageJsonTask modifyPackageJsonTask) {
-                configureModifyPackageJsonVersionTask(modifyPackageJsonTask, project)
+                modifyPackageJsonTask.group = TASK_GROUP
+                modifyPackageJsonTask.inputFile = project.file(PACKAGE_JSON)
+                modifyPackageJsonTask.outputFile = project.file(PACKAGE_JSON)
+                modifyPackageJsonTask.config = [version: project.getVersion().toString()]
+                modifyPackageJsonTask.description = "Set 'package.json' version based on release plugin version"
                 publishTask.dependsOn modifyPackageJsonTask
             }
         })
     }
 
-    private static void configureModifyPackageJsonVersionTask(ModifyPackageJsonTask task, Project project) {
-        task.group = TASK_GROUP
-        task.inputFile = project.file(PACKAGE_JSON)
-        task.outputFile = project.file(PACKAGE_JSON)
-        task.config = [version: project.getVersion().toString()]
-        task.description = "Set 'package.json' version based on release plugin version"
+    private static void configureNpmCredentialsTasks(Project project, NodeReleasePluginExtension extension) {
+        project.tasks.withType(NpmCredentialsTask, new Action<NpmCredentialsTask>() {
+
+            @Override
+            void execute(NpmCredentialsTask npmCredentialsTask) {
+                npmCredentialsTask.group = TASK_GROUP
+                npmCredentialsTask.description = "create ${NPMRC} file"
+                npmCredentialsTask.npmUser.set(extension.npmUser)
+                npmCredentialsTask.npmPass.set(extension.npmPass)
+                npmCredentialsTask.npmAuthUrl.set(extension.npmAuthUrl)
+                npmCredentialsTask.npmrcFile.set(extension.npmrcFile)
+            }
+        })
     }
 }
