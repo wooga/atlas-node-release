@@ -72,7 +72,18 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         git.remote.add(name: "origin", url: "https://github.com/${testRepositoryName}.git")
     }
 
-    def "run NpmCredentialsTask successfully"() {
+    def "run task of type NpmCredentialsTask with default properties"() {
+
+        given: "a valid defined task"
+        buildFile << """                   
+        task test (type:wooga.gradle.node.tasks.NpmCredentialsTask) 
+        """.stripIndent()
+
+        expect: "runs"
+        runTasksSuccessfully("test")
+    }
+
+    def "run task of type NpmCredentialsTask with task properties"() {
 
         given: "a valid defined task"
         buildFile << """                   
@@ -87,7 +98,49 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         runTasksSuccessfully("test")
     }
 
-    def "run custom NpmCredentialsTask writes .npmrc file"() {
+    def "run task :ensureNpmrc with project properties"() {
+
+        when: "no env vars set for npm login"
+        environmentVariables.clear('NODE_RELEASE_NPM_USER', 'NODE_RELEASE_NPM_PASS')
+
+        and:
+        assert (!System.getenv("NODE_RELEASE_NPM_USER"))
+        assert (!System.getenv("NODE_RELEASE_NPM_PASS"))
+
+        and: 'properties defined in properties file'
+        new File(projectDir, 'gradle.properties') << """
+        nodeRelease.npmUser=${npmUser}
+        nodeRelease.npmPass=${npmPass}
+        nodeRelease.npmAuthUrl=${npmAuthUrl}
+        """.stripIndent().trim()
+
+        then: "runs"
+        runTasksSuccessfully("ensureNpmrc")
+    }
+
+    def "run task :ensureNpmrc with extension.properties"() {
+
+        when: "no env vars set for npm login"
+        environmentVariables.clear('NODE_RELEASE_NPM_USER', 'NODE_RELEASE_NPM_PASS')
+
+        and:
+        assert (!System.getenv("NODE_RELEASE_NPM_USER"))
+        assert (!System.getenv("NODE_RELEASE_NPM_PASS"))
+        assert runTasksWithFailure("ensureNpmrc")
+
+        and: 'properties defined in properties file'
+        buildFile << """nodeRelease {
+            npmUser='${npmUser}'
+            npmPass='${npmPass}'
+            npmAuthUrl='${npmAuthUrl}'                                          
+        }
+        """.stripIndent()
+
+        then: "runs"
+        runTasksSuccessfully("ensureNpmrc")
+    }
+
+    def "task of type NpmCredentialsTask writes .npmrc file"() {
 
         given: "a valid defined task"
         buildFile << """    
@@ -105,11 +158,11 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         file('.npmrc').exists()
 
         and:
-        def registry = file('.npmrc').text.readLines().first()
+        def registry = file('.npmrc').readLines().first()
         registry == '@wooga:registry=https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/'
     }
 
-    def "run custom NpmCredentialsTask writes .npmrc file only if registry doesn't exist already"() {
+    def "task of type NpmCredentialsTask writes .npmrc file only if registry doesn't exist already"() {
 
         def npmrcFile = file('.npmrc')
         npmrcFile << '@wooga:registry=https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/'
@@ -130,77 +183,7 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         file('.npmrc').exists()
 
         and:
-        file('.npmrc').text.readLines().size() == 1
-    }
-
-    def "run custom NpmCredentialsTask successfully with env vars"() {
-
-        given: "a valid defined task"
-        buildFile << """               
-        task test (type:wooga.gradle.node.tasks.NpmCredentialsTask) 
-        """.stripIndent()
-
-        expect: "runs"
-        runTasksSuccessfully("test")
-    }
-
-    def "run custom NpmCredentialsTask unsuccessfully"() {
-
-        when: "no env vars set for npm login"
-        environmentVariables.clear('NODE_RELEASE_NPM_USER', 'NODE_RELEASE_NPM_PASS')
-
-        and:
-        assert (!System.getenv("NODE_RELEASE_NPM_USER"))
-        assert (!System.getenv("NODE_RELEASE_NPM_PASS"))
-
-        and: "a valid defined task"
-        buildFile << """                                           
-        task test (type:wooga.gradle.node.tasks.NpmCredentialsTask) 
-        """.stripIndent()
-
-        then: "runs"
-        runTasksWithFailure("test")
-    }
-
-    def "run NpmCredentialsTask successfully with project.properties"() {
-
-        when: "no env vars set for npm login"
-        environmentVariables.clear('NODE_RELEASE_NPM_USER', 'NODE_RELEASE_NPM_PASS')
-
-        and:
-        assert (!System.getenv("NODE_RELEASE_NPM_USER"))
-        assert (!System.getenv("NODE_RELEASE_NPM_PASS"))
-
-        and: 'properties defined in properties file'
-        new File(projectDir, 'gradle.properties') << """
-        nodeRelease.npmUser=${npmUser}
-        nodeRelease.npmPass=${npmPass}
-        nodeRelease.npmAuthUrl=${npmAuthUrl}
-        """.stripIndent().trim()
-
-        then: "runs"
-        runTasksSuccessfully("ensureNpmrc")
-    }
-
-    def "run NpmCredentialsTask successfully with extension.properties"() {
-
-        when: "no env vars set for npm login"
-        environmentVariables.clear('NODE_RELEASE_NPM_USER', 'NODE_RELEASE_NPM_PASS')
-
-        and:
-        assert (!System.getenv("NODE_RELEASE_NPM_USER"))
-        assert (!System.getenv("NODE_RELEASE_NPM_PASS"))
-
-        and: 'properties defined in properties file'
-        buildFile << """nodeRelease {
-            npmUser='${npmUser}'
-            npmPass='${npmPass}'
-            npmAuthUrl='${npmAuthUrl}'                                          
-        }
-        """.stripIndent()
-
-        then: "runs"
-        runTasksSuccessfully("ensureNpmrc")
+        file('.npmrc').readLines().size() == 1
     }
 
 }
