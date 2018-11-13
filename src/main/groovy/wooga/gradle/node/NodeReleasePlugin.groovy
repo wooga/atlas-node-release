@@ -27,12 +27,17 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
 import wooga.gradle.node.tasks.NpmCredentialsTask
 
+enum Engine {
+    npm,
+    yarn
+}
+
 class NodeReleasePlugin implements Plugin<Project> {
 
-    static final String NPM_CLEAN_TASK = 'npm_run_clean'
-    static final String NPM_BUILD_TASK = 'npm_run_build'
-    static final String NPM_TEST_TASK = 'npm_run_test'
-    static final String NPM_PUBLISH_TASK = 'npm_publish'
+    static final String NPM_CLEAN_TASK = 'node_run_clean'
+    static final String NPM_BUILD_TASK = 'node_run_build'
+    static final String NPM_TEST_TASK = 'node_run_test'
+    static final String NPM_PUBLISH_TASK = 'node_publish'
 
     static final String MODIFY_PACKAGE_VERSION_TASK = 'modifyPackageJson_version'
     static final String CREATE_CREDENTIALS_TASK = 'ensureNpmrc'
@@ -42,6 +47,8 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String TASK_GROUP = 'Node Release'
 
     static final String PACKAGE_JSON = 'package.json'
+    static final String PACKAGE_LOCK_JSON = 'package-lock.json'
+    static final String YARN_LOCK_JSON = 'yarn.lock'
     static final String NPMRC = '.npmrc'
 
     static final String NODE_RELEASE_NPM_USER_ENV_VAR = 'NODE_RELEASE_NPM_USER'
@@ -49,6 +56,7 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String NODE_RELEASE_NPM_AUTH_URL_ENV_VAR = 'NODE_RELEASE_NPM_AUTH_URL'
 
     private NodeReleasePluginExtension extension
+    private static Engine engine
 
     @Override
     void apply(Project project) {
@@ -60,6 +68,7 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         if (project == project.rootProject) {
             project.pluginManager.apply(ReleasePlugin.class)
+            detectEngine(project)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonVersionTask(project)
             configureNpmCredentialsTasks(project, extension)
@@ -67,6 +76,15 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
         project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
+
+    }
+
+    private static detectEngine(Project project) {
+        engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
+    }
+
+    private static engineScopedTaskName(String taskName) {
+        return "${engine}_${(taskName - "node_")}"
     }
 
     private NodeReleasePluginExtension createExtension(Project project) {
@@ -93,19 +111,29 @@ class NodeReleasePlugin implements Plugin<Project> {
         def cleanTask = tasks.getByName(BasePlugin.CLEAN_TASK_NAME)
         def postReleaseTask = tasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
         def releaseTask = tasks.getByName('release')
-        def publishTask = project.tasks.getByName(NPM_PUBLISH_TASK)
+        def publishTask = project.tasks.getByName(engineScopedTaskName(NPM_PUBLISH_TASK))
 
-        def npmCleanTask = tasks.getByName(NPM_CLEAN_TASK)
-        def npmTestTask = tasks.getByName(NPM_TEST_TASK)
-        def npmBuildTask = tasks.getByName(NPM_BUILD_TASK)
-        def npmPublishTask = tasks.getByName(NPM_PUBLISH_TASK)
+        def nodeCleanTask = tasks.create(NPM_CLEAN_TASK)
+        def nodeTestTask = tasks.create(NPM_TEST_TASK)
+        def nodeBuildTask = tasks.create(NPM_BUILD_TASK)
+        def nodePublishTask = tasks.create(NPM_PUBLISH_TASK)
 
-        cleanTask.dependsOn npmCleanTask
-        checkTask.dependsOn npmTestTask
+        def engineScopedCleanTask = tasks.getByName(engineScopedTaskName(NPM_CLEAN_TASK))
+        def engineScopedTestTask = tasks.getByName(engineScopedTaskName(NPM_TEST_TASK))
+        def engineScopedBuildTask = tasks.getByName(engineScopedTaskName(NPM_BUILD_TASK))
+        def engineScopedPublishTask = tasks.getByName(engineScopedTaskName(NPM_PUBLISH_TASK))
+
+        nodeCleanTask.dependsOn engineScopedCleanTask
+        nodeTestTask.dependsOn engineScopedTestTask
+        nodeBuildTask.dependsOn engineScopedBuildTask
+        nodePublishTask.dependsOn engineScopedPublishTask
+
+        cleanTask.dependsOn nodeCleanTask
+        checkTask.dependsOn nodeTestTask
         releaseTask.dependsOn assembleTask
-        assembleTask.dependsOn npmBuildTask
+        assembleTask.dependsOn nodeBuildTask
         tasks.release.dependsOn assembleTask
-        postReleaseTask.dependsOn npmPublishTask
+        postReleaseTask.dependsOn nodePublishTask
         publishTask.mustRunAfter releaseTask
     }
 
