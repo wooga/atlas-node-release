@@ -45,11 +45,23 @@ class NodeReleasePluginSpec extends ProjectSpec {
 
         when:
         project.plugins.apply(NodeReleasePlugin)
-
+        
         then:
         project.tasks.getByName(taskName)
 
         where:
         taskName << [NodeReleasePlugin.NPM_TEST_TASK, NodeReleasePlugin.NPM_BUILD_TASK, NodeReleasePlugin.NPM_CLEAN_TASK]
+    }
+
+    def "set default engine to npm"() {
+        given:
+        !project.file('package-lock.json')
+        !project.file('yarn.lock')
+
+        when:
+        project.plugins.apply(NodeReleasePlugin)
+
+        then:
+        project.tasks.getByName('npm_run_test')
     }
 }
