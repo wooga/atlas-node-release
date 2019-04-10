@@ -127,4 +127,20 @@ abstract class GithubIntegrationSpec extends IntegrationSpec {
     def cleanupSpec() {
         maybeDelete(testRepositoryName)
     }
+
+    GHRelease getRelease(String tagName) {
+        (GHRelease) testRepo.listReleases().find({ it.tagName == tagName })
+    }
+
+    GHRelease getReleaseByName(String name) {
+        (GHRelease) testRepo.listReleases().find({ it.name == name })
+    }
+
+    Boolean hasRelease(String tagName) {
+        getRelease(tagName) != null
+    }
+
+    Boolean hasReleaseByName(String name) {
+        getReleaseByName(name) != null
+    }
 }

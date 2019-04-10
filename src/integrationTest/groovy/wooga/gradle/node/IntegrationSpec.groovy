@@ -19,9 +19,14 @@ package wooga.gradle.node
 
 import groovy.json.JsonBuilder
 import groovy.json.StringEscapeUtils
+import org.junit.Rule
+import org.junit.contrib.java.lang.system.ProvideSystemProperty
 
 class IntegrationSpec extends nebula.test.IntegrationSpec {
 
+    @Rule
+    ProvideSystemProperty properties = new ProvideSystemProperty("ignoreDeprecations", "true")
+    
     def escapedPath(String path) {
         String osName = System.getProperty("os.name").toLowerCase()
         if (osName.contains("windows")) {
