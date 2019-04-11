@@ -24,6 +24,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import wooga.gradle.github.publish.GithubPublishPlugin
+import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
 import wooga.gradle.node.tasks.NpmCredentialsTask
 
@@ -34,10 +36,10 @@ enum Engine {
 
 class NodeReleasePlugin implements Plugin<Project> {
 
-    static final String NPM_CLEAN_TASK = 'node_run_clean'
-    static final String NPM_BUILD_TASK = 'node_run_build'
-    static final String NPM_TEST_TASK = 'node_run_test'
-    static final String NPM_PUBLISH_TASK = 'node_publish'
+    static final String NODE_CLEAN_TASK = 'node_run_clean'
+    static final String NODE_BUILD_TASK = 'node_run_build'
+    static final String NODE_TEST_TASK = 'node_run_test'
+    static final String NODE_PUBLISH_TASK = 'node_publish'
 
     static final String MODIFY_PACKAGE_VERSION_TASK = 'modifyPackageJson_version'
     static final String CREATE_CREDENTIALS_TASK = 'ensureNpmrc'
@@ -63,6 +65,7 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         project.pluginManager.apply(BasePlugin.class)
         project.pluginManager.apply(NodePlugin.class)
+        project.pluginManager.apply(GithubPublishPlugin.class)
 
         extension = createExtension(project)
 
@@ -72,6 +75,7 @@ class NodeReleasePlugin implements Plugin<Project> {
             configureReleaseLifecycle(project)
             configureModifyPackageJsonVersionTask(project)
             configureNpmCredentialsTasks(project, extension)
+            configureGithubPublish(project)
         }
 
         project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
@@ -82,7 +86,7 @@ class NodeReleasePlugin implements Plugin<Project> {
     private static detectEngine(Project project) {
         engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
     }
-
+    
     private static engineScopedTaskName(String taskName) {
         return "${engine}_${(taskName - "node_")}"
     }
@@ -111,17 +115,18 @@ class NodeReleasePlugin implements Plugin<Project> {
         def cleanTask = tasks.getByName(BasePlugin.CLEAN_TASK_NAME)
         def postReleaseTask = tasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
         def releaseTask = tasks.getByName('release')
-        def publishTask = project.tasks.getByName(engineScopedTaskName(NPM_PUBLISH_TASK))
+        def publishTask = project.tasks.getByName(engineScopedTaskName(NODE_PUBLISH_TASK))
+        def githubPublishTask = project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
 
-        def nodeCleanTask = tasks.create(NPM_CLEAN_TASK)
-        def nodeTestTask = tasks.create(NPM_TEST_TASK)
-        def nodeBuildTask = tasks.create(NPM_BUILD_TASK)
-        def nodePublishTask = tasks.create(NPM_PUBLISH_TASK)
+        def nodeCleanTask = tasks.create(NODE_CLEAN_TASK)
+        def nodeTestTask = tasks.create(NODE_TEST_TASK)
+        def nodeBuildTask = tasks.create(NODE_BUILD_TASK)
+        def nodePublishTask = tasks.create(NODE_PUBLISH_TASK)
 
-        def engineScopedCleanTask = tasks.getByName(engineScopedTaskName(NPM_CLEAN_TASK))
-        def engineScopedTestTask = tasks.getByName(engineScopedTaskName(NPM_TEST_TASK))
-        def engineScopedBuildTask = tasks.getByName(engineScopedTaskName(NPM_BUILD_TASK))
-        def engineScopedPublishTask = tasks.getByName(engineScopedTaskName(NPM_PUBLISH_TASK))
+        def engineScopedCleanTask = tasks.getByName(engineScopedTaskName(NODE_CLEAN_TASK))
+        def engineScopedTestTask = tasks.getByName(engineScopedTaskName(NODE_TEST_TASK))
+        def engineScopedBuildTask = tasks.getByName(engineScopedTaskName(NODE_BUILD_TASK))
+        def engineScopedPublishTask = tasks.getByName(engineScopedTaskName(NODE_PUBLISH_TASK))
 
         nodeCleanTask.dependsOn engineScopedCleanTask
         nodeTestTask.dependsOn engineScopedTestTask
@@ -133,12 +138,13 @@ class NodeReleasePlugin implements Plugin<Project> {
         releaseTask.dependsOn assembleTask
         assembleTask.dependsOn nodeBuildTask
         tasks.release.dependsOn assembleTask
-        postReleaseTask.dependsOn nodePublishTask
+        postReleaseTask.dependsOn nodePublishTask, githubPublishTask
         publishTask.mustRunAfter releaseTask
+        githubPublishTask.mustRunAfter nodePublishTask
     }
 
     private static void configureModifyPackageJsonVersionTask(Project project) {
-        def publishTask = project.tasks.getByName(NPM_PUBLISH_TASK)
+        def publishTask = project.tasks.getByName(NODE_PUBLISH_TASK)
         project.tasks.withType(ModifyPackageJsonTask, new Action<ModifyPackageJsonTask>() {
 
             @Override
@@ -164,6 +170,23 @@ class NodeReleasePlugin implements Plugin<Project> {
                 npmCredentialsTask.npmPass.set(extension.npmPass)
                 npmCredentialsTask.npmAuthUrl.set(extension.npmAuthUrl)
                 npmCredentialsTask.npmrcFile.set(extension.npmrcFile)
+            }
+        })
+    }
+
+    private static void configureGithubPublish(Project project) {
+        project.tasks.withType(GithubPublish, new Action<GithubPublish>() {
+
+            @Override
+            void execute(GithubPublish githubPublishTask) {
+                githubPublishTask.tagName = "v${project.version}"
+                githubPublishTask.releaseName = project.version
+                githubPublishTask.body = null
+                githubPublishTask.draft = false
+                githubPublishTask.prerelease = project.status != 'release'
+                githubPublishTask.onlyIf {
+                    ['candidate', 'release'].contains(project.status)
+                }
             }
         })
     }

@@ -50,7 +50,7 @@ class NodeReleasePluginSpec extends ProjectSpec {
         project.tasks.getByName(taskName)
 
         where:
-        taskName << [NodeReleasePlugin.NPM_TEST_TASK, NodeReleasePlugin.NPM_BUILD_TASK, NodeReleasePlugin.NPM_CLEAN_TASK]
+        taskName << ['node_run_test', 'node_run_build', 'node_run_clean', 'githubPublish']
     }
 
     def "set default engine to npm"() {

@@ -26,6 +26,7 @@ import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.Shared
 import spock.lang.Unroll
+import wooga.gradle.github.publish.GithubPublishPlugin
 
 class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
@@ -75,8 +76,11 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     Grgit git
 
     def setup() {
+
         environmentVariables.set("GRGIT_USER", testUserName)
         environmentVariables.set("GRGIT_PASS", testUserToken)
+        environmentVariables.set("GITHUB_LOGIN", testUserName)
+        environmentVariables.set("GITHUB_PASSWORD", testUserToken)
 
         new File(projectDir, '.gitignore') << """
         userHome/
@@ -91,6 +95,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
             ${applyPlugin(NodeReleasePlugin)}    
             node.version = '10.5.0'
             node.download = true
+            
+            github.repositoryName = '$testRepositoryName'
         """.stripIndent()
 
         packageJsonFile = createFile("package.json")
@@ -111,6 +117,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         git.commit(message: 'initial commit')
         git.tag.add(name: 'v0.0.1')
         git.remote.add(name: "origin", url: "https://github.com/${testRepositoryName}.git")
+
+        cleanupArtifactory(artifactoryRepoName, packageNameForPackageJson())
     }
 
     def cleanup() {
@@ -175,5 +183,36 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         "snapshot"  | "0.1.0-SNAPSHOT"
         "candidate" | "0.1.0-rc.1"
         "final"     | "0.1.0"
+    }
+
+    @Unroll
+    def 'builds and and create #task #version with github release #expectRelease'() {
+        given: "the future npm artifact"
+        packageJsonFile.exists()
+
+        and: "some content to publish"
+        def content = createFile("content.json")
+        content.text = "hello world"
+
+        and:
+        git.add(patterns: ['.'])
+        git.commit(message: 'add files')
+
+        when: "run the publish task"
+        def result = runTasks(task)
+
+        then:
+        result.success
+        result.wasExecuted("node_publish")
+        result.wasExecuted("npm_publish")
+        result.wasSkipped("githubPublish") != expectRelease
+
+        hasReleaseByName(version) == expectRelease
+
+        where:
+        task        | version          | expectRelease
+        "snapshot"  | "0.1.0-SNAPSHOT" | false
+        "candidate" | "0.1.0-rc.1"     | true
+        "final"     | "0.1.0"          | true
     }
 }
