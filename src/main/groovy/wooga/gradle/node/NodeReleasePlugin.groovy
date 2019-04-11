@@ -40,7 +40,6 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String NODE_BUILD_TASK = 'node_run_build'
     static final String NODE_TEST_TASK = 'node_run_test'
     static final String NODE_PUBLISH_TASK = 'node_publish'
-    static final String GITHUB_RELEASE_TASK = 'nodeGithubRelease'
 
     static final String MODIFY_PACKAGE_VERSION_TASK = 'modifyPackageJson_version'
     static final String CREATE_CREDENTIALS_TASK = 'ensureNpmrc'
@@ -87,7 +86,7 @@ class NodeReleasePlugin implements Plugin<Project> {
     private static detectEngine(Project project) {
         engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
     }
-
+    
     private static engineScopedTaskName(String taskName) {
         return "${engine}_${(taskName - "node_")}"
     }
@@ -117,7 +116,7 @@ class NodeReleasePlugin implements Plugin<Project> {
         def postReleaseTask = tasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
         def releaseTask = tasks.getByName('release')
         def publishTask = project.tasks.getByName(engineScopedTaskName(NODE_PUBLISH_TASK))
-        def githubPublishTask = project.tasks.create(name:GITHUB_RELEASE_TASK, type:GithubPublish)
+        def githubPublishTask = project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
 
         def nodeCleanTask = tasks.create(NODE_CLEAN_TASK)
         def nodeTestTask = tasks.create(NODE_TEST_TASK)
@@ -180,7 +179,6 @@ class NodeReleasePlugin implements Plugin<Project> {
 
             @Override
             void execute(GithubPublish githubPublishTask) {
-                githubPublishTask.group = TASK_GROUP
                 githubPublishTask.tagName = "v${project.version}"
                 githubPublishTask.releaseName = project.version
                 githubPublishTask.body = null

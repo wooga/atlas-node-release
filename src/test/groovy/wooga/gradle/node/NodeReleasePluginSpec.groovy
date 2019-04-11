@@ -20,7 +20,6 @@ package wooga.gradle.node
 import nebula.test.ProjectSpec
 import org.ajoberstar.grgit.Grgit
 import spock.lang.Unroll
-import wooga.gradle.github.publish.GithubPublishPlugin
 
 class NodeReleasePluginSpec extends ProjectSpec {
 
@@ -51,7 +50,7 @@ class NodeReleasePluginSpec extends ProjectSpec {
         project.tasks.getByName(taskName)
 
         where:
-        taskName << [NodeReleasePlugin.NODE_TEST_TASK, NodeReleasePlugin.NODE_BUILD_TASK, NodeReleasePlugin.NODE_CLEAN_TASK]
+        taskName << ['node_run_test', 'node_run_build', 'node_run_clean', 'githubPublish']
     }
 
     def "set default engine to npm"() {
@@ -64,13 +63,5 @@ class NodeReleasePluginSpec extends ProjectSpec {
 
         then:
         project.tasks.getByName('npm_run_test')
-    }
-
-    def "creates github publish task"() {
-        when:
-        project.plugins.apply(NodeReleasePlugin)
-
-        then:
-        project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
     }
 }

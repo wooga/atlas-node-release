@@ -79,6 +79,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
         environmentVariables.set("GRGIT_USER", testUserName)
         environmentVariables.set("GRGIT_PASS", testUserToken)
+        environmentVariables.set("GITHUB_LOGIN", testUserName)
+        environmentVariables.set("GITHUB_PASSWORD", testUserToken)
 
         new File(projectDir, '.gitignore') << """
         userHome/
@@ -184,7 +186,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     }
 
     @Unroll
-    def 'builds and and create #task #version with github release #released'() {
+    def 'builds and and create #task #version with github release #expectRelease'() {
         given: "the future npm artifact"
         packageJsonFile.exists()
 
@@ -203,19 +205,12 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         result.success
         result.wasExecuted("node_publish")
         result.wasExecuted("npm_publish")
+        result.wasSkipped("githubPublish") != expectRelease
 
-        then:
-        result.wasSkipped("nodeGithubRelease") == !released
-        hasReleaseByName(version) == released
-        print testRepo.listReleases()
-
-        if (released) {
-            def release = getReleaseByName(version)
-            release.name == version
-        }
+        hasReleaseByName(version) == expectRelease
 
         where:
-        task        | version          | released
+        task        | version          | expectRelease
         "snapshot"  | "0.1.0-SNAPSHOT" | false
         "candidate" | "0.1.0-rc.1"     | true
         "final"     | "0.1.0"          | true
