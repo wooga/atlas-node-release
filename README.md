@@ -48,10 +48,14 @@ plugins {
     id 'net.wooga.node-release' version '0.1.0'
 }
 
+github {
+    respositoryName = 'wooga/wdk-js-MyPackage'	
+}
+
 nodeRelease {
-	npmUser = 'username'
-	npmPass = 'password'
-	npmAuthUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
+    npmUser = 'username'
+    npmPass = 'password'
+    npmAuthUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
 }
 
 project.npmSetup.dependsOn ensureNpmrc
@@ -66,9 +70,9 @@ This task type can be used to create a npm configuration file (`.npmrc`). By def
 **Example Configuration:**
 ```groovy
 task example (type:wooga.gradle.node.tasks.NpmCredentialsTask) {
-	npmUser = 'username'
-	npmPass = 'password'
-	npmAuthUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
+    npmUser = 'username'
+    npmPass = 'password'
+    npmAuthUrl = 'https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/auth/wooga'
 }
 ```
 you can optionally set `npmrcFile` to define the target location. By default it's set to project root
@@ -85,9 +89,17 @@ you can optionally set `npmrcFile` to define the target location. By default it'
 ```groovy
 // set npmrc to system level
 nodeRelease {
-	npmrc = file('~/.npmrc')
+    npmrc = file('~/.npmrc')
 }
 ```
+
+**github**
+```groovy
+github {
+    respositoryName = 'wooga/wdk-js-MyPackage'	
+}
+```
+In order to enable github releases, we have to define the target repository. 
 
 LICENSE
 =======
