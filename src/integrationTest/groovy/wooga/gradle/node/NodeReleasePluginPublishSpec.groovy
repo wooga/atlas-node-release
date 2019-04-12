@@ -26,7 +26,6 @@ import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.Shared
 import spock.lang.Unroll
-import wooga.gradle.github.publish.GithubPublishPlugin
 
 class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
@@ -186,7 +185,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     }
 
     @Unroll
-    def 'builds and and create #task #version with github release #expectRelease'() {
+    def 'builds and and create #task #version with github release #expectRelease as prerelease #prerelease'() {
         given: "the future npm artifact"
         packageJsonFile.exists()
 
@@ -209,10 +208,14 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
         hasReleaseByName(version) == expectRelease
 
+        if (expectRelease) {
+            getReleaseByName(version).prerelease == prerelease
+        }
+
         where:
-        task        | version          | expectRelease
-        "snapshot"  | "0.1.0-SNAPSHOT" | false
-        "candidate" | "0.1.0-rc.1"     | true
-        "final"     | "0.1.0"          | true
+        task        | version          | expectRelease | prerelease
+        "snapshot"  | "0.1.0-SNAPSHOT" | false         | true
+        "candidate" | "0.1.0-rc.1"     | true          | true
+        "final"     | "0.1.0"          | true          | false
     }
 }

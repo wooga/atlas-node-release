@@ -86,7 +86,7 @@ class NodeReleasePlugin implements Plugin<Project> {
     private static detectEngine(Project project) {
         engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
     }
-    
+
     private static engineScopedTaskName(String taskName) {
         return "${engine}_${(taskName - "node_")}"
     }
@@ -183,7 +183,7 @@ class NodeReleasePlugin implements Plugin<Project> {
                 githubPublishTask.releaseName = project.version
                 githubPublishTask.body = null
                 githubPublishTask.draft = false
-                githubPublishTask.prerelease = project.status != 'release'
+                githubPublishTask.prerelease = { project.status != 'release' }
                 githubPublishTask.onlyIf {
                     ['candidate', 'release'].contains(project.status)
                 }
