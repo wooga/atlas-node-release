@@ -179,7 +179,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
         where:
         task        | version
-        "snapshot"  | "0.1.0-SNAPSHOT"
+        "snapshot"  | "0.1.0-master.1"
         "candidate" | "0.1.0-rc.1"
         "final"     | "0.1.0"
     }
@@ -214,7 +214,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
         where:
         task        | version          | expectRelease | prerelease
-        "snapshot"  | "0.1.0-SNAPSHOT" | false         | true
+        "snapshot"  | "0.1.0-master.1" | false         | true
         "candidate" | "0.1.0-rc.1"     | true          | true
         "final"     | "0.1.0"          | true          | false
     }

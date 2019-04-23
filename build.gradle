@@ -40,6 +40,7 @@ dependencies {
     compile 'com.netflix.nebula:nebula-release-plugin:6.+'
     compile 'com.moowork.gradle:gradle-node-plugin:1.2.0'
     compile "gradle.plugin.net.wooga.gradle:atlas-github:1.+"
+    compile "gradle.plugin.net.wooga.gradle:atlas-release:1.+"
     compile gradleApi()
     compile localGroovy()
 }
