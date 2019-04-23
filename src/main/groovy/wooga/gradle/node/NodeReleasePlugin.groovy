@@ -19,6 +19,7 @@ package wooga.gradle.node
 
 import com.moowork.gradle.node.NodePlugin
 import nebula.plugin.release.ReleasePlugin
+import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -28,6 +29,7 @@ import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
 import wooga.gradle.node.tasks.NpmCredentialsTask
+import wooga.gradle.release.version.semver2.VersionStrategies
 
 enum Engine {
     npm,
@@ -72,6 +74,7 @@ class NodeReleasePlugin implements Plugin<Project> {
         if (project == project.rootProject) {
             project.pluginManager.apply(ReleasePlugin.class)
             detectEngine(project)
+            configureVersionStrategy(project)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonVersionTask(project)
             configureNpmCredentialsTasks(project, extension)
@@ -189,5 +192,18 @@ class NodeReleasePlugin implements Plugin<Project> {
                 }
             }
         })
+    }
+
+    private static void configureVersionStrategy(Project project) {
+        ReleasePluginExtension releaseExtension = project.extensions.findByType(ReleasePluginExtension)
+
+        releaseExtension.with {
+            releaseExtension.versionStrategy(VersionStrategies.SNAPSHOT)
+            releaseExtension.versionStrategy(VersionStrategies.DEVELOPMENT)
+            releaseExtension.versionStrategy(VersionStrategies.PRE_RELEASE)
+            releaseExtension.versionStrategy(VersionStrategies.FINAL)
+            releaseExtension.defaultVersionStrategy = VersionStrategies.DEVELOPMENT
+
+        }
     }
 }
