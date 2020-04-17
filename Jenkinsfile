@@ -33,7 +33,7 @@
                                             "ATLAS_GITHUB_INTEGRATION_PASSWORD=${githubPassword}",
                                             "NODE_RELEASE_NPM_USER_TEST=${npm_test_credentials_user}",
                                             "NODE_RELEASE_NPM_PASS_TEST=${npm_test_credentials_pass}",
-                                            "NODE_RELEASE_NPM_AUTH_URL_TEST=https://wooga.jfrog.com/wooga/api/npm/atlas-node/auth/wooga"
+                                            "NODE_RELEASE_NPM_AUTH_URL_TEST=https://wooga.jfrog.io/wooga/api/npm/atlas-node/auth/wooga"
                                 ],
                                 'windows' : [
                                             "artifactoryCredentials=${artifactory_publish}",
@@ -42,7 +42,7 @@
                                             "ATLAS_GITHUB_INTEGRATION_PASSWORD=${githubPassword2}",
                                             "NODE_RELEASE_NPM_USER_TEST=${npm_test_credentials_user}",
                                             "NODE_RELEASE_NPM_PASS_TEST=${npm_test_credentials_pass}",
-                                            "NODE_RELEASE_NPM_AUTH_URL_TEST=https://wooga.jfrog.com/wooga/api/npm/atlas-node/auth/wooga"
+                                            "NODE_RELEASE_NPM_AUTH_URL_TEST=https://wooga.jfrog.io/wooga/api/npm/atlas-node/auth/wooga"
                                 ]
                             ]
 
