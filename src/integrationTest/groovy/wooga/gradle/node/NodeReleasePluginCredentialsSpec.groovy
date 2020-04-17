@@ -159,13 +159,13 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
 
         and:
         def registry = file('.npmrc').readLines().first()
-        registry == '@wooga:registry=https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/'
+        registry == '@wooga:registry=https://wooga.jfrog.io/wooga/api/npm/atlas-node/'
     }
 
     def "task of type NpmCredentialsTask writes .npmrc file only if registry doesn't exist already"() {
 
         def npmrcFile = file('.npmrc')
-        npmrcFile << '@wooga:registry=https://wooga.artifactoryonline.com/wooga/api/npm/atlas-node/'
+        npmrcFile << '@wooga:registry=https://wooga.jfrog.io/wooga/api/npm/atlas-node/'
 
         given: "a valid defined task"
         buildFile << """          
