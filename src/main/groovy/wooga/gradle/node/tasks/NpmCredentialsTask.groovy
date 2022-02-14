@@ -39,7 +39,7 @@ class NpmCredentialsTask extends DefaultTask {
     final Property<String> npmAuthUrl = project.objects.property(String)
 
     @OutputFile
-    final RegularFileProperty npmrcFile = newOutputFile()
+    final RegularFileProperty npmrcFile = project.objects.fileProperty()
 
     @TaskAction
     protected void exec() {

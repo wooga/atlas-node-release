@@ -23,15 +23,29 @@ import org.gradle.api.provider.Property
 
 class NodeReleasePluginExtension {
 
-    final Property<String> npmUser
-    final Property<String> npmPass
-    final Property<String> npmAuthUrl
-    final RegularFileProperty npmrcFile
+    private final Property<String> npmUser
+    Property<String> getNpmUser() {
+        npmUser
+    }
+
+    private final Property<String> npmPass
+    Property<String> getNpmPass() {
+        npmUser
+    }
+
+    private final Property<String> npmAuthUrl
+    Property<String> getNpmAuthUrl() {
+        npmAuthUrl
+    }
+    private final RegularFileProperty npmrcFile
+    RegularFileProperty getNpmrcFile(){
+        npmrcFile
+    }
 
     NodeReleasePluginExtension(Project project) {
         npmUser = project.objects.property(String)
         npmPass = project.objects.property(String)
         npmAuthUrl = project.objects.property(String)
-        npmrcFile = project.layout.fileProperty()
+        npmrcFile = project.objects.fileProperty()
     }
 }
