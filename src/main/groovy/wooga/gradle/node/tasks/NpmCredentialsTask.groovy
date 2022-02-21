@@ -48,6 +48,7 @@ class NpmCredentialsTask extends DefaultTask {
 
             @Override
             void execute(ExecSpec execSpec) {
+                // https://www.jfrog.com/confluence/display/JFROG/Access+Tokens
                 execSpec.commandLine 'curl', '-u', npmUser.get() + ":" + npmPass.get(), npmAuthUrl.get()
                 execSpec.standardOutput = output
             }

@@ -17,7 +17,7 @@
 
 package wooga.gradle.node
 
-import com.moowork.gradle.node.NodePlugin
+import com.github.gradle.node.NodePlugin
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
