@@ -127,14 +127,21 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     def cleanupArtifactory(String repoName, String artifactName) {
         List<RepoPath> searchItems = artifactory.searches()
                 .repositories(repoName)
-                .artifactsByName(artifactName)
+                .artifactsByName(artifactName.replaceAll(/\+.*$/, ''))
                 .doSearch()
 
         for (RepoPath searchItem : searchItems) {
             String repoKey = searchItem.getRepoKey()
             println(repoKey)
             String itemPath = searchItem.getItemPath()
-            artifactory.repository(repoName).delete(itemPath)
+            try {
+                artifactory.repository(repoName).delete(itemPath)
+            } catch (e) {
+                println("error while deleting ${itemPath}")
+            }
+            finally {
+                println("delete done")
+            }
         }
     }
 
@@ -144,8 +151,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
                 .artifactsByName(artifactName)
                 .doSearch()
 
-        assert packages.size() >= 2
-        true
+        packages.size() >= 2
     }
 
     def packageNameForPackageJson() {
@@ -197,6 +203,11 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         git.add(patterns: ['.'])
         git.commit(message: 'add files')
 
+        and: "ensure artifact is not located on artifactory"
+        environmentVariables.set("VERSION_BUILDER_STAGE", task)
+        cleanupArtifactory(artifactoryRepoName, "${packageID}-${version}")
+        assert !hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
+
         when: "run the publish task"
         def result = runTasks(task)
 
@@ -207,15 +218,16 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         result.wasSkipped("githubPublish") != expectRelease
 
         hasReleaseByName(version) == expectRelease
+        hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
 
         if (expectRelease) {
             getReleaseByName(version).prerelease == prerelease
         }
 
         where:
-        task        | version          | expectRelease | prerelease
-        "snapshot"  | "0.1.0-master.1" | false         | true
-        "candidate" | "0.1.0-rc.1"     | true          | true
-        "final"     | "0.1.0"          | true          | false
+        task       | version          | expectRelease | prerelease
+        "snapshot" | "0.1.0-master.1" | false         | true
+        "rc"       | "0.1.0-rc.1"     | true          | true
+        "final"    | "0.1.0"          | true          | false
     }
 }

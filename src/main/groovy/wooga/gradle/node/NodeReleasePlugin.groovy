@@ -96,6 +96,14 @@ class NodeReleasePlugin implements Plugin<Project> {
     private static void applyVersionPlugin(Project project) {
         project.pluginManager.apply(VersionPlugin)
         VersionPluginExtension versionExtension = project.extensions.findByType(VersionPluginExtension)
+        def p = project.providers.provider({
+            project.gradle.startParameter.taskNames.contains("final")
+            if(project.gradle.taskGraph.allTasks.contains(":final")) {
+                return "final"
+            }
+
+            null
+        })
         versionExtension.versionScheme(VersionScheme.semver2)
     }
 
