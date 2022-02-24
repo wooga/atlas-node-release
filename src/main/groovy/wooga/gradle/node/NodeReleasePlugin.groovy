@@ -24,11 +24,13 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.publish.plugins.PublishingPlugin
+import org.gradle.api.specs.Spec
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
 import wooga.gradle.node.tasks.NpmCredentialsTask
+import wooga.gradle.release.utils.ProjectPropertyValueTaskSpec
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
 import wooga.gradle.version.VersionScheme
@@ -216,31 +218,45 @@ class NodeReleasePlugin implements Plugin<Project> {
     }
 
     private static void configureGithubPublish(Project project) {
-        project.tasks.withType(GithubPublish, new Action<GithubPublish>() {
+        VersionPluginExtension versionExtension = project.extensions.findByType(VersionPluginExtension)
 
+        //TODO Clean me up and fix me in net.wooga.release
+        def logger = project.logger
+        def predicate = new Spec<Task>() {
+            @Override
+            boolean isSatisfiedBy(Task task) {
+                def propertyName = "versionBuilder.stage"
+                def value = versionExtension.stage.getOrNull()
+                def validValues = ["rc", "final"]
+
+                Boolean satisfied = false
+                String messagePrefix = "Predicate property '${propertyName}' for task '${task.name}'"
+                if (value) {
+                    satisfied = value in validValues
+                    if (satisfied) {
+                        logger.info("${messagePrefix} satisfies the condition as it has a valid value of '${value}'")
+                    } else {
+                        logger.info("${messagePrefix} did not satisfy the condition as its value of '${value}' was not among those valid: ${validValues}")
+                    }
+                } else {
+                    logger.warn("${messagePrefix} did not satisfy the condition as it was not found among the project's properties")
+                }
+                return satisfied
+            }
+        }
+
+        project.tasks.withType(GithubPublish, new Action<GithubPublish>() {
             @Override
             void execute(GithubPublish githubPublishTask) {
+                githubPublishTask.onlyIf(predicate)
                 githubPublishTask.tagName.set("v${project.version}")
                 githubPublishTask.releaseName.set( project.version.toString())
                 githubPublishTask.body = null
                 githubPublishTask.draft.set(false)
-                githubPublishTask.prerelease.set(project.provider { project.status != 'final' })
-                githubPublishTask.onlyIf {
-                    ['rc', 'final'].contains(project.status)
-                }
+                githubPublishTask.prerelease.set(versionExtension.stage.map({
+                    it != "final"
+                }))
             }
         })
     }
-
-//    private static void configureVersionStrategy(Project project) {
-//        ReleasePluginExtension releaseExtension = project.extensions.findByType(ReleasePluginExtension)
-//
-//        releaseExtension.with {
-//            releaseExtension.versionStrategy(VersionStrategies.SNAPSHOT)
-//            releaseExtension.versionStrategy(VersionStrategies.DEVELOPMENT)
-//            releaseExtension.versionStrategy(VersionStrategies.PRE_RELEASE)
-//            releaseExtension.versionStrategy(VersionStrategies.FINAL)
-//            releaseExtension.defaultVersionStrategy = VersionStrategies.DEVELOPMENT
-//        }
-//    }
 }

@@ -160,7 +160,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     }
 
     @Unroll
-    def 'builds and publish a package running task #task with version #version'() {
+    def 'builds and publish a package running task publish with #stage with version #version'() {
         given: "the future npm artifact"
         packageJsonFile.exists()
 
@@ -173,7 +173,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         git.commit(message: 'add files')
 
         when: "run the publish task"
-        def result = runTasks(task)
+        environmentVariables.set("VERSION_BUILDER_STAGE", stage)
+        def result = runTasks("publish")
         def config = new JsonSlurper().parseText(packageJsonFile.text)
 
         then:
@@ -184,14 +185,14 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         config.version == version
 
         where:
-        task        | version
-        "snapshot"  | "0.1.0-master.1"
-        "candidate" | "0.1.0-rc.1"
-        "final"     | "0.1.0"
+        stage      | version
+        "snapshot" | "0.1.0-master.1"
+        "rc"       | "0.1.0-rc.1"
+        "final"    | "0.1.0"
     }
 
     @Unroll
-    def 'builds and and create #task #version with github release #expectRelease as prerelease #prerelease'() {
+    def 'build and creates #stage version #version with github release #expectRelease as prerelease #prerelease'() {
         given: "the future npm artifact"
         packageJsonFile.exists()
 
@@ -204,12 +205,12 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         git.commit(message: 'add files')
 
         and: "ensure artifact is not located on artifactory"
-        environmentVariables.set("VERSION_BUILDER_STAGE", task)
+        environmentVariables.set("VERSION_BUILDER_STAGE", stage)
         cleanupArtifactory(artifactoryRepoName, "${packageID}-${version}")
         assert !hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
 
         when: "run the publish task"
-        def result = runTasks(task)
+        def result = runTasks("publish")
 
         then:
         result.success
@@ -217,6 +218,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         result.wasExecuted("npm_publish")
         result.wasSkipped("githubPublish") != expectRelease
 
+        sleep(2000)
         hasReleaseByName(version) == expectRelease
         hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
 
@@ -225,7 +227,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         }
 
         where:
-        task       | version          | expectRelease | prerelease
+        stage      | version          | expectRelease | prerelease
         "snapshot" | "0.1.0-master.1" | false         | true
         "rc"       | "0.1.0-rc.1"     | true          | true
         "final"    | "0.1.0"          | true          | false
