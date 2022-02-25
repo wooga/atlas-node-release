@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2020-2022 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,16 +131,11 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
                 .doSearch()
 
         for (RepoPath searchItem : searchItems) {
-            String repoKey = searchItem.getRepoKey()
-            println(repoKey)
             String itemPath = searchItem.getItemPath()
             try {
                 artifactory.repository(repoName).delete(itemPath)
             } catch (e) {
-                println("error while deleting ${itemPath}")
-            }
-            finally {
-                println("delete done")
+                println("error while deleting ${itemPath}: ${e}")
             }
         }
     }

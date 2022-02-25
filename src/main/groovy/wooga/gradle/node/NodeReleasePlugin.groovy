@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2020-2022 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,15 +30,10 @@ import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
 import wooga.gradle.node.tasks.NpmCredentialsTask
-import wooga.gradle.release.utils.ProjectPropertyValueTaskSpec
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
 import wooga.gradle.version.VersionScheme
 
-enum Engine {
-    npm,
-    yarn
-}
 
 class NodeReleasePlugin implements Plugin<Project> {
 
@@ -48,6 +43,7 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String NODE_PUBLISH_TASK = 'node_publish'
 
     public static final String RC_TASK_NAME = "rc"
+    private static final String DEPRECATED_CANDIDATE_TASK_NAME = "candidate"
     public static final String FINAL_TASK_NAME = "final"
     public static final String SNAPSHOT_TASK_NAME = "snapshot"
 
@@ -55,17 +51,12 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String CREATE_CREDENTIALS_TASK = 'ensureNpmrc'
 
     static final String PLUGIN_EXTENSION = 'nodeRelease'
-
     static final String TASK_GROUP = 'Node Release'
 
     static final String PACKAGE_JSON = 'package.json'
     static final String PACKAGE_LOCK_JSON = 'package-lock.json'
     static final String YARN_LOCK_JSON = 'yarn.lock'
     static final String NPMRC = '.npmrc'
-
-    static final String NODE_RELEASE_NPM_USER_ENV_VAR = 'NODE_RELEASE_NPM_USER'
-    static final String NODE_RELEASE_NPM_PASS_ENV_VAR = 'NODE_RELEASE_NPM_PASS'
-    static final String NODE_RELEASE_NPM_AUTH_URL_ENV_VAR = 'NODE_RELEASE_NPM_AUTH_URL'
 
     private NodeReleasePluginExtension extension
     private static Engine engine
@@ -80,8 +71,6 @@ class NodeReleasePlugin implements Plugin<Project> {
         extension = createExtension(project)
 
         if (project == project.rootProject) {
-            //project.pluginManager.apply(ReleasePlugin.class)
-            // Detect whether the project is using yarn or npm
             detectEngine(project)
             applyVersionPlugin(project)
             configureReleaseLifecycle(project)
@@ -90,9 +79,10 @@ class NodeReleasePlugin implements Plugin<Project> {
             configureGithubPublish(project)
         }
 
+        aliasCandidateTasksToRc(project)
+
         project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
         project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
-
     }
 
     private static void applyVersionPlugin(Project project) {
@@ -100,39 +90,58 @@ class NodeReleasePlugin implements Plugin<Project> {
         VersionPluginExtension versionExtension = project.extensions.findByType(VersionPluginExtension)
         def p = project.providers.provider({
             project.gradle.startParameter.taskNames.contains("final")
-            if(project.gradle.taskGraph.allTasks.contains(":final")) {
+            if (project.gradle.taskGraph.allTasks.contains(":final")) {
                 return "final"
             }
-
             null
         })
         versionExtension.versionScheme(VersionScheme.semver2)
     }
 
-    private static detectEngine(Project project) {
-        engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
-    }
-
-    private static engineScopedTaskName(String taskName) {
-        return "${engine}_${(taskName - "node_")}"
-    }
-
     private NodeReleasePluginExtension createExtension(Project project) {
         extension = project.extensions.create(PLUGIN_EXTENSION, NodeReleasePluginExtension, project)
-        extension.npmUser.set(getConfigProperty(project, 'nodeRelease.npmUser', NODE_RELEASE_NPM_USER_ENV_VAR))
-        extension.npmPass.set(getConfigProperty(project, 'nodeRelease.npmPass', NODE_RELEASE_NPM_PASS_ENV_VAR))
-        extension.npmAuthUrl.set(getConfigProperty(project, 'nodeRelease.npmAuthUrl', NODE_RELEASE_NPM_AUTH_URL_ENV_VAR))
+        extension.npmUser.convention(NodeReleasePluginConventions.npmUser.getStringValueProvider(project))
+        extension.npmPass.convention(NodeReleasePluginConventions.npmPassword.getStringValueProvider(project))
+        extension.npmAuthUrl.convention(NodeReleasePluginConventions.npmAuthUrl.getStringValueProvider(project))
         extension.npmrcFile.set(project.file(NPMRC))
         extension
     }
 
-    private static String getConfigProperty(Project project, String name, String envName) {
-        if (project.hasProperty(name)) {
-            return project.properties[name].toString()
-        }
-        return System.getenv(envName)
+    private static void configureModifyPackageJsonVersionTask(Project project) {
+        def publishTask = project.tasks.getByName(NODE_PUBLISH_TASK)
+        project.tasks.withType(ModifyPackageJsonTask, new Action<ModifyPackageJsonTask>() {
+
+            @Override
+            void execute(ModifyPackageJsonTask modifyPackageJsonTask) {
+                modifyPackageJsonTask.group = TASK_GROUP
+                modifyPackageJsonTask.inputFile = project.file(PACKAGE_JSON)
+                modifyPackageJsonTask.outputFile = project.file(PACKAGE_JSON)
+                modifyPackageJsonTask.config = [version: project.getVersion().toString()]
+                modifyPackageJsonTask.description = "Set 'package.json' version based on release plugin version"
+                publishTask.dependsOn modifyPackageJsonTask
+            }
+        })
     }
 
+    private static void configureNpmCredentialsTasks(Project project, NodeReleasePluginExtension extension) {
+        project.tasks.withType(NpmCredentialsTask, new Action<NpmCredentialsTask>() {
+
+            @Override
+            void execute(NpmCredentialsTask npmCredentialsTask) {
+                npmCredentialsTask.group = TASK_GROUP
+                npmCredentialsTask.description = "create ${NPMRC} file"
+                npmCredentialsTask.npmUser.set(extension.npmUser)
+                npmCredentialsTask.npmPass.set(extension.npmPass)
+                npmCredentialsTask.npmAuthUrl.set(extension.npmAuthUrl)
+                npmCredentialsTask.npmrcFile.set(extension.npmrcFile)
+            }
+        })
+    }
+
+    /**
+     * Hook the various node tasks into gradle's release lifecycle tasks.
+     * The engine scoped tasks are....
+     */
     private static void configureReleaseLifecycle(Project project) {
         def tasks = project.tasks
 
@@ -141,10 +150,6 @@ class NodeReleasePlugin implements Plugin<Project> {
         def cleanTask = tasks.getByName(BasePlugin.CLEAN_TASK_NAME)
         def publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
 
-        // TODO: Replace?
-        //def postReleaseTask = tasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
-        //def releaseTask = tasks.getByName('release')
-        //def publishTask = project.tasks.getByName(engineScopedTaskName(NODE_PUBLISH_TASK))
         def githubPublishTask = project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
 
         def nodeCleanTask = tasks.create(NODE_CLEAN_TASK)
@@ -179,42 +184,6 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         cleanTask.dependsOn nodeCleanTask
         checkTask.dependsOn nodeTestTask
-        //releaseTask.dependsOn assembleTask
-        //tasks.release.dependsOn assembleTask
-        // TODO: Replace?
-        //postReleaseTask.dependsOn nodePublishTask, githubPublishTask
-        //publishTask.mustRunAfter releaseTask
-    }
-
-    private static void configureModifyPackageJsonVersionTask(Project project) {
-        def publishTask = project.tasks.getByName(NODE_PUBLISH_TASK)
-        project.tasks.withType(ModifyPackageJsonTask, new Action<ModifyPackageJsonTask>() {
-
-            @Override
-            void execute(ModifyPackageJsonTask modifyPackageJsonTask) {
-                modifyPackageJsonTask.group = TASK_GROUP
-                modifyPackageJsonTask.inputFile = project.file(PACKAGE_JSON)
-                modifyPackageJsonTask.outputFile = project.file(PACKAGE_JSON)
-                modifyPackageJsonTask.config = [version: project.getVersion().toString()]
-                modifyPackageJsonTask.description = "Set 'package.json' version based on release plugin version"
-                publishTask.dependsOn modifyPackageJsonTask
-            }
-        })
-    }
-
-    private static void configureNpmCredentialsTasks(Project project, NodeReleasePluginExtension extension) {
-        project.tasks.withType(NpmCredentialsTask, new Action<NpmCredentialsTask>() {
-
-            @Override
-            void execute(NpmCredentialsTask npmCredentialsTask) {
-                npmCredentialsTask.group = TASK_GROUP
-                npmCredentialsTask.description = "create ${NPMRC} file"
-                npmCredentialsTask.npmUser.set(extension.npmUser)
-                npmCredentialsTask.npmPass.set(extension.npmPass)
-                npmCredentialsTask.npmAuthUrl.set(extension.npmAuthUrl)
-                npmCredentialsTask.npmrcFile.set(extension.npmrcFile)
-            }
-        })
     }
 
     private static void configureGithubPublish(Project project) {
@@ -250,7 +219,7 @@ class NodeReleasePlugin implements Plugin<Project> {
             void execute(GithubPublish githubPublishTask) {
                 githubPublishTask.onlyIf(predicate)
                 githubPublishTask.tagName.set("v${project.version}")
-                githubPublishTask.releaseName.set( project.version.toString())
+                githubPublishTask.releaseName.set(project.version.toString())
                 githubPublishTask.body = null
                 githubPublishTask.draft.set(false)
                 githubPublishTask.prerelease.set(versionExtension.stage.map({
@@ -258,5 +227,26 @@ class NodeReleasePlugin implements Plugin<Project> {
                 }))
             }
         })
+    }
+
+    private static detectEngine(Project project) {
+        engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
+    }
+
+    private static engineScopedTaskName(String taskName) {
+        return "${engine}_${(taskName - "node_")}"
+    }
+
+    /**
+     * Older versions of this plugin used the {@code candidate} task name for what we consider the {@code rc} task.
+     * We need to replace any mentions of {@code candidate} with {@code rc} for our newer API.
+     */
+    protected static void aliasCandidateTasksToRc(Project project) {
+        List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
+        if (cliTasks.contains(DEPRECATED_CANDIDATE_TASK_NAME)) {
+            cliTasks.remove(DEPRECATED_CANDIDATE_TASK_NAME)
+            cliTasks.add(RC_TASK_NAME)
+            project.rootProject.gradle.startParameter.setTaskNames(cliTasks)
+        }
     }
 }

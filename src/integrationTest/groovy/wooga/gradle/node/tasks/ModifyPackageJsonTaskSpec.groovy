@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2020-2022 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ package wooga.gradle.node.tasks
 import groovy.json.JsonSlurper
 import spock.lang.Unroll
 import wooga.gradle.node.IntegrationSpec
+
+import static com.wooga.gradle.PlatformUtils.escapedPath
 
 class ModifyPackageJsonTaskSpec extends IntegrationSpec {
 
