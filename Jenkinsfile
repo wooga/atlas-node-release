@@ -26,7 +26,7 @@
                   string(credentialsId: 'atlas_node_release_coveralls_token', variable: 'coveralls_token')]) {
 
      def testEnvironment = [
-                                'osx' : [
+                                'macos' : [
                                             "artifactoryCredentials=${artifactory_publish}",
                                             "artifactory_npm_token=${npm_token}",
                                             "ATLAS_GITHUB_INTEGRATION_USER=${githubUser}",
@@ -46,5 +46,5 @@
                                 ]
                             ]
 
-     buildGradlePlugin plaforms: ['osx','windows'], coverallsToken: coveralls_token, testEnvironment: testEnvironment
+     buildGradlePlugin platforms: ['macos','windows'], coverallsToken: coveralls_token, testEnvironment: testEnvironment
  }

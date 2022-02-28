@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2020-2022 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,23 @@
 
 package wooga.gradle.node
 
-import com.moowork.gradle.node.NodePlugin
-import nebula.plugin.release.ReleasePlugin
-import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
+import com.github.gradle.node.NodePlugin
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.publish.plugins.PublishingPlugin
+import org.gradle.api.specs.Spec
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
 import wooga.gradle.node.tasks.ModifyPackageJsonTask
 import wooga.gradle.node.tasks.NpmCredentialsTask
-import wooga.gradle.release.version.semver2.VersionStrategies
+import wooga.gradle.version.VersionPlugin
+import wooga.gradle.version.VersionPluginExtension
+import wooga.gradle.version.VersionScheme
 
-enum Engine {
-    npm,
-    yarn
-}
 
 class NodeReleasePlugin implements Plugin<Project> {
 
@@ -43,21 +42,21 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String NODE_TEST_TASK = 'node_run_test'
     static final String NODE_PUBLISH_TASK = 'node_publish'
 
+    public static final String RC_TASK_NAME = "rc"
+    private static final String DEPRECATED_CANDIDATE_TASK_NAME = "candidate"
+    public static final String FINAL_TASK_NAME = "final"
+    public static final String SNAPSHOT_TASK_NAME = "snapshot"
+
     static final String MODIFY_PACKAGE_VERSION_TASK = 'modifyPackageJson_version'
     static final String CREATE_CREDENTIALS_TASK = 'ensureNpmrc'
 
     static final String PLUGIN_EXTENSION = 'nodeRelease'
-
     static final String TASK_GROUP = 'Node Release'
 
     static final String PACKAGE_JSON = 'package.json'
     static final String PACKAGE_LOCK_JSON = 'package-lock.json'
     static final String YARN_LOCK_JSON = 'yarn.lock'
     static final String NPMRC = '.npmrc'
-
-    static final String NODE_RELEASE_NPM_USER_ENV_VAR = 'NODE_RELEASE_NPM_USER'
-    static final String NODE_RELEASE_NPM_PASS_ENV_VAR = 'NODE_RELEASE_NPM_PASS'
-    static final String NODE_RELEASE_NPM_AUTH_URL_ENV_VAR = 'NODE_RELEASE_NPM_AUTH_URL'
 
     private NodeReleasePluginExtension extension
     private static Engine engine
@@ -72,78 +71,40 @@ class NodeReleasePlugin implements Plugin<Project> {
         extension = createExtension(project)
 
         if (project == project.rootProject) {
-            project.pluginManager.apply(ReleasePlugin.class)
             detectEngine(project)
-            configureVersionStrategy(project)
+            applyVersionPlugin(project)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonVersionTask(project)
             configureNpmCredentialsTasks(project, extension)
             configureGithubPublish(project)
         }
 
+        aliasCandidateTasksToRc(project)
+
         project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
         project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
-
     }
 
-    private static detectEngine(Project project) {
-        engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
-    }
-
-    private static engineScopedTaskName(String taskName) {
-        return "${engine}_${(taskName - "node_")}"
+    private static void applyVersionPlugin(Project project) {
+        project.pluginManager.apply(VersionPlugin)
+        VersionPluginExtension versionExtension = project.extensions.findByType(VersionPluginExtension)
+        def p = project.providers.provider({
+            project.gradle.startParameter.taskNames.contains("final")
+            if (project.gradle.taskGraph.allTasks.contains(":final")) {
+                return "final"
+            }
+            null
+        })
+        versionExtension.versionScheme(VersionScheme.semver2)
     }
 
     private NodeReleasePluginExtension createExtension(Project project) {
         extension = project.extensions.create(PLUGIN_EXTENSION, NodeReleasePluginExtension, project)
-        extension.npmUser.set(getConfigProperty(project, 'nodeRelease.npmUser', NODE_RELEASE_NPM_USER_ENV_VAR))
-        extension.npmPass.set(getConfigProperty(project, 'nodeRelease.npmPass', NODE_RELEASE_NPM_PASS_ENV_VAR))
-        extension.npmAuthUrl.set(getConfigProperty(project, 'nodeRelease.npmAuthUrl', NODE_RELEASE_NPM_AUTH_URL_ENV_VAR))
+        extension.npmUser.convention(NodeReleasePluginConventions.npmUser.getStringValueProvider(project))
+        extension.npmPass.convention(NodeReleasePluginConventions.npmPassword.getStringValueProvider(project))
+        extension.npmAuthUrl.convention(NodeReleasePluginConventions.npmAuthUrl.getStringValueProvider(project))
         extension.npmrcFile.set(project.file(NPMRC))
         extension
-    }
-
-    private static String getConfigProperty(Project project, String name, String envName) {
-        if (project.hasProperty(name)) {
-            return project.properties[name].toString()
-        }
-        return System.getenv(envName)
-    }
-
-    private static void configureReleaseLifecycle(Project project) {
-        def tasks = project.tasks
-
-        def checkTask = tasks.getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
-        def assembleTask = tasks.getByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
-        def cleanTask = tasks.getByName(BasePlugin.CLEAN_TASK_NAME)
-        def postReleaseTask = tasks.getByName(ReleasePlugin.POST_RELEASE_TASK_NAME)
-        def releaseTask = tasks.getByName('release')
-        def publishTask = project.tasks.getByName(engineScopedTaskName(NODE_PUBLISH_TASK))
-        def githubPublishTask = project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
-
-        def nodeCleanTask = tasks.create(NODE_CLEAN_TASK)
-        def nodeTestTask = tasks.create(NODE_TEST_TASK)
-        def nodeBuildTask = tasks.create(NODE_BUILD_TASK)
-        def nodePublishTask = tasks.create(NODE_PUBLISH_TASK)
-
-        def engineScopedCleanTask = tasks.getByName(engineScopedTaskName(NODE_CLEAN_TASK))
-        def engineScopedTestTask = tasks.getByName(engineScopedTaskName(NODE_TEST_TASK))
-        def engineScopedBuildTask = tasks.getByName(engineScopedTaskName(NODE_BUILD_TASK))
-        def engineScopedPublishTask = tasks.getByName(engineScopedTaskName(NODE_PUBLISH_TASK))
-
-        nodeCleanTask.dependsOn engineScopedCleanTask
-        nodeTestTask.dependsOn engineScopedTestTask
-        nodeBuildTask.dependsOn engineScopedBuildTask
-        nodePublishTask.dependsOn engineScopedPublishTask
-
-        cleanTask.dependsOn nodeCleanTask
-        checkTask.dependsOn nodeTestTask
-        releaseTask.dependsOn assembleTask
-        assembleTask.dependsOn nodeBuildTask
-        tasks.release.dependsOn assembleTask
-        postReleaseTask.dependsOn nodePublishTask, githubPublishTask
-        publishTask.mustRunAfter releaseTask
-        githubPublishTask.mustRunAfter nodePublishTask
     }
 
     private static void configureModifyPackageJsonVersionTask(Project project) {
@@ -177,33 +138,115 @@ class NodeReleasePlugin implements Plugin<Project> {
         })
     }
 
-    private static void configureGithubPublish(Project project) {
-        project.tasks.withType(GithubPublish, new Action<GithubPublish>() {
+    /**
+     * Hook the various node tasks into gradle's release lifecycle tasks.
+     * The engine scoped tasks are....
+     */
+    private static void configureReleaseLifecycle(Project project) {
+        def tasks = project.tasks
 
+        def checkTask = tasks.getByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+        def assembleTask = tasks.getByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
+        def cleanTask = tasks.getByName(BasePlugin.CLEAN_TASK_NAME)
+        def publishTask = tasks.getByName(PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME)
+
+        def githubPublishTask = project.tasks.getByName(GithubPublishPlugin.PUBLISH_TASK_NAME)
+
+        def nodeCleanTask = tasks.create(NODE_CLEAN_TASK)
+        def nodeTestTask = tasks.create(NODE_TEST_TASK)
+        def nodeBuildTask = tasks.create(NODE_BUILD_TASK)
+        def nodePublishTask = tasks.create(NODE_PUBLISH_TASK)
+
+        def engineScopedCleanTask = tasks.getByName(engineScopedTaskName(NODE_CLEAN_TASK))
+        def engineScopedTestTask = tasks.getByName(engineScopedTaskName(NODE_TEST_TASK))
+        def engineScopedBuildTask = tasks.getByName(engineScopedTaskName(NODE_BUILD_TASK))
+        def engineScopedPublishTask = tasks.getByName(engineScopedTaskName(NODE_PUBLISH_TASK))
+
+        nodeCleanTask.dependsOn engineScopedCleanTask
+        nodeTestTask.dependsOn engineScopedTestTask
+
+        // Set up assemble lifecycle dependencies
+        nodeBuildTask.dependsOn engineScopedBuildTask
+        assembleTask.dependsOn nodeBuildTask
+        // Set up publish lifecycle dependencies
+        nodePublishTask.dependsOn engineScopedPublishTask
+        publishTask.dependsOn nodePublishTask
+        githubPublishTask.mustRunAfter nodePublishTask
+
+        // TODO: Add custom tasks previously provided by the nebula release plugin
+        Task finalTask = project.tasks.create(FINAL_TASK_NAME)
+        Task rcTask = project.tasks.create(RC_TASK_NAME)
+        Task snapshotTask = project.tasks.create(SNAPSHOT_TASK_NAME)
+
+        [finalTask, rcTask, snapshotTask].each {
+            it.dependsOn publishTask
+        }
+
+        cleanTask.dependsOn nodeCleanTask
+        checkTask.dependsOn nodeTestTask
+    }
+
+    private static void configureGithubPublish(Project project) {
+        VersionPluginExtension versionExtension = project.extensions.findByType(VersionPluginExtension)
+
+        //TODO Clean me up and fix me in net.wooga.release
+        def logger = project.logger
+        def predicate = new Spec<Task>() {
+            @Override
+            boolean isSatisfiedBy(Task task) {
+                def propertyName = "versionBuilder.stage"
+                def value = versionExtension.stage.getOrNull()
+                def validValues = ["rc", "final"]
+
+                Boolean satisfied = false
+                String messagePrefix = "Predicate property '${propertyName}' for task '${task.name}'"
+                if (value) {
+                    satisfied = value in validValues
+                    if (satisfied) {
+                        logger.info("${messagePrefix} satisfies the condition as it has a valid value of '${value}'")
+                    } else {
+                        logger.info("${messagePrefix} did not satisfy the condition as its value of '${value}' was not among those valid: ${validValues}")
+                    }
+                } else {
+                    logger.warn("${messagePrefix} did not satisfy the condition as it was not found among the project's properties")
+                }
+                return satisfied
+            }
+        }
+
+        project.tasks.withType(GithubPublish, new Action<GithubPublish>() {
             @Override
             void execute(GithubPublish githubPublishTask) {
-                githubPublishTask.tagName = "v${project.version}"
-                githubPublishTask.releaseName = project.version
+                githubPublishTask.onlyIf(predicate)
+                githubPublishTask.tagName.set("v${project.version}")
+                githubPublishTask.releaseName.set(project.version.toString())
                 githubPublishTask.body = null
-                githubPublishTask.draft = false
-                githubPublishTask.prerelease = { project.status != 'release' }
-                githubPublishTask.onlyIf {
-                    ['candidate', 'release'].contains(project.status)
-                }
+                githubPublishTask.draft.set(false)
+                githubPublishTask.prerelease.set(versionExtension.stage.map({
+                    it != "final"
+                }))
             }
         })
     }
 
-    private static void configureVersionStrategy(Project project) {
-        ReleasePluginExtension releaseExtension = project.extensions.findByType(ReleasePluginExtension)
+    private static detectEngine(Project project) {
+        engine = project.file(YARN_LOCK_JSON).exists() ? Engine.yarn : Engine.npm
+    }
 
-        releaseExtension.with {
-            releaseExtension.versionStrategy(VersionStrategies.SNAPSHOT)
-            releaseExtension.versionStrategy(VersionStrategies.DEVELOPMENT)
-            releaseExtension.versionStrategy(VersionStrategies.PRE_RELEASE)
-            releaseExtension.versionStrategy(VersionStrategies.FINAL)
-            releaseExtension.defaultVersionStrategy = VersionStrategies.DEVELOPMENT
+    private static engineScopedTaskName(String taskName) {
+        return "${engine}_${(taskName - "node_")}"
+    }
 
+    /**
+     * Older versions of this plugin used the {@code candidate} task name for what we consider the {@code rc} task.
+     * We need to replace any mentions of {@code candidate} with {@code rc} for our newer API.
+     */
+    protected static void aliasCandidateTasksToRc(Project project) {
+        List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
+        if (cliTasks.contains(DEPRECATED_CANDIDATE_TASK_NAME)) {
+            cliTasks.remove(DEPRECATED_CANDIDATE_TASK_NAME)
+            cliTasks.add(RC_TASK_NAME)
+            project.rootProject.gradle.startParameter.setTaskNames(cliTasks)
         }
     }
 }

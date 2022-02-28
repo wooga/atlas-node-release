@@ -20,14 +20,13 @@ Applying the plugin
 **build.gradle**
 ```groovy
 plugins {
-    id 'net.wooga.node-release' version '0.+'
+    id 'net.wooga.node-release' version '2.+'
 }
 ```
 
 Conventions
 ===========
-* Applies [nebula.release](https://github.com/nebula-plugins/nebula-release-plugin)
-* Applies [com.moowork.node](https://github.com/nebula-plugins/nebula-release-plugin)
+* Applies [com.github.node-gradle](https://github.com/node-gradle/gradle-node-plugin)
 * Expects a valid `package.json` on project root.
 * Expects `clean`, `test` and `build` task in `scripts` block of `package.json`
 * Expects existence of a git repository with remote origin

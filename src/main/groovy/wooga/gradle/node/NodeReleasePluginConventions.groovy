@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Wooga GmbH
+ * Copyright 2022 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,19 @@
 
 package wooga.gradle.node
 
-import groovy.json.JsonBuilder
-import groovy.json.StringEscapeUtils
-import org.junit.Rule
-import org.junit.contrib.java.lang.system.ProvideSystemProperty
+import com.wooga.gradle.PropertyLookup
 
-class IntegrationSpec extends com.wooga.gradle.test.IntegrationSpec {
-
-    String packageJsonContent(Map<String, Object> content) {
-        new JsonBuilder(content).toPrettyString()
-    }
+class NodeReleasePluginConventions {
+    /**
+     * Npm login username
+     */
+    static final PropertyLookup npmUser = new PropertyLookup("NODE_RELEASE_NPM_USER", "nodeRelease.npmUser", null)
+    /**
+     * Npm login password
+     */
+    static final PropertyLookup npmPassword = new PropertyLookup("NODE_RELEASE_NPM_PASS", "nodeRelease.npmPass", null)
+    /**
+     * Npm authorization url
+     */
+    static final PropertyLookup npmAuthUrl = new PropertyLookup("NODE_RELEASE_NPM_AUTH_URL", "nodeRelease.npmAuthUrl", null)
 }

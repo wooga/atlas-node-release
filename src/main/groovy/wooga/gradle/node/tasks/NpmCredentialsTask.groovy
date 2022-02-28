@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2020 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class NpmCredentialsTask extends DefaultTask {
     final Property<String> npmAuthUrl = project.objects.property(String)
 
     @OutputFile
-    final RegularFileProperty npmrcFile = newOutputFile()
+    final RegularFileProperty npmrcFile = project.objects.fileProperty()
 
     @TaskAction
     protected void exec() {
@@ -48,6 +48,7 @@ class NpmCredentialsTask extends DefaultTask {
 
             @Override
             void execute(ExecSpec execSpec) {
+                // https://www.jfrog.com/confluence/display/JFROG/Access+Tokens
                 execSpec.commandLine 'curl', '-u', npmUser.get() + ":" + npmPass.get(), npmAuthUrl.get()
                 execSpec.standardOutput = output
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Wooga GmbH
+ * Copyright 2020-2022 Wooga GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,14 +127,16 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     def cleanupArtifactory(String repoName, String artifactName) {
         List<RepoPath> searchItems = artifactory.searches()
                 .repositories(repoName)
-                .artifactsByName(artifactName)
+                .artifactsByName(artifactName.replaceAll(/\+.*$/, ''))
                 .doSearch()
 
         for (RepoPath searchItem : searchItems) {
-            String repoKey = searchItem.getRepoKey()
-            println(repoKey)
             String itemPath = searchItem.getItemPath()
-            artifactory.repository(repoName).delete(itemPath)
+            try {
+                artifactory.repository(repoName).delete(itemPath)
+            } catch (e) {
+                println("error while deleting ${itemPath}: ${e}")
+            }
         }
     }
 
@@ -144,8 +146,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
                 .artifactsByName(artifactName)
                 .doSearch()
 
-        assert packages.size() >= 2
-        true
+        packages.size() >= 2
     }
 
     def packageNameForPackageJson() {
@@ -154,7 +155,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
     }
 
     @Unroll
-    def 'builds and publish a package running task #task with version #version'() {
+    def 'builds and publish a package running task publish with #stage with version #version'() {
         given: "the future npm artifact"
         packageJsonFile.exists()
 
@@ -167,7 +168,8 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         git.commit(message: 'add files')
 
         when: "run the publish task"
-        def result = runTasks(task)
+        environmentVariables.set("VERSION_BUILDER_STAGE", stage)
+        def result = runTasks("publish")
         def config = new JsonSlurper().parseText(packageJsonFile.text)
 
         then:
@@ -178,14 +180,14 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         config.version == version
 
         where:
-        task        | version
-        "snapshot"  | "0.1.0-master.1"
-        "candidate" | "0.1.0-rc.1"
-        "final"     | "0.1.0"
+        stage      | version
+        "snapshot" | "0.1.0-master.1"
+        "rc"       | "0.1.0-rc.1"
+        "final"    | "0.1.0"
     }
 
     @Unroll
-    def 'builds and and create #task #version with github release #expectRelease as prerelease #prerelease'() {
+    def 'build and creates #stage version #version with github release #expectRelease as prerelease #prerelease'() {
         given: "the future npm artifact"
         packageJsonFile.exists()
 
@@ -197,8 +199,13 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         git.add(patterns: ['.'])
         git.commit(message: 'add files')
 
+        and: "ensure artifact is not located on artifactory"
+        environmentVariables.set("VERSION_BUILDER_STAGE", stage)
+        cleanupArtifactory(artifactoryRepoName, "${packageID}-${version}")
+        assert !hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
+
         when: "run the publish task"
-        def result = runTasks(task)
+        def result = runTasks("publish")
 
         then:
         result.success
@@ -206,16 +213,18 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         result.wasExecuted("npm_publish")
         result.wasSkipped("githubPublish") != expectRelease
 
+        sleep(2000)
         hasReleaseByName(version) == expectRelease
+        hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
 
         if (expectRelease) {
             getReleaseByName(version).prerelease == prerelease
         }
 
         where:
-        task        | version          | expectRelease | prerelease
-        "snapshot"  | "0.1.0-master.1" | false         | true
-        "candidate" | "0.1.0-rc.1"     | true          | true
-        "final"     | "0.1.0"          | true          | false
+        stage      | version          | expectRelease | prerelease
+        "snapshot" | "0.1.0-master.1" | false         | true
+        "rc"       | "0.1.0-rc.1"     | true          | true
+        "final"    | "0.1.0"          | true          | false
     }
 }
