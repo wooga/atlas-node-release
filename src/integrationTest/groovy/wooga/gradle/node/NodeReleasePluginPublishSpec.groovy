@@ -227,4 +227,16 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         "rc"       | "0.1.0-rc.1"     | true          | true
         "final"    | "0.1.0"          | true          | false
     }
+
+    def "converts task/release.stage candidate to rc"() {
+        given: "a gradle.properties file"
+        def gradleProperties = createFile("gradle.properties", projectDir)
+        gradleProperties << "release.stage=candidate"
+
+        when:
+        def result = runTasksSuccessfully("properties")
+
+        then:
+        result.standardOutput.contains("release.stage=rc")
+    }
 }
