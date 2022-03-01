@@ -63,7 +63,6 @@ class NodeReleasePlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        aliasCandidateTasksToRc(project)
 
         project.pluginManager.apply(BasePlugin.class)
         project.pluginManager.apply(NodePlugin.class)
@@ -71,9 +70,9 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         extension = createExtension(project)
 
-
         if (project == project.rootProject) {
             detectEngine(project)
+            aliasCandidateTasksToRc(project)
             applyVersionPlugin(project)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonVersionTask(project)
