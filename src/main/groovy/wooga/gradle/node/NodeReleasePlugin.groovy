@@ -23,6 +23,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -33,7 +34,6 @@ import wooga.gradle.node.tasks.NpmCredentialsTask
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
 import wooga.gradle.version.VersionScheme
-
 
 class NodeReleasePlugin implements Plugin<Project> {
 
@@ -63,6 +63,7 @@ class NodeReleasePlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        aliasCandidateTasksToRc(project)
 
         project.pluginManager.apply(BasePlugin.class)
         project.pluginManager.apply(NodePlugin.class)
@@ -70,7 +71,6 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         extension = createExtension(project)
 
-        aliasCandidateTasksToRc(project)
 
         if (project == project.rootProject) {
             detectEngine(project)
@@ -259,7 +259,9 @@ class NodeReleasePlugin implements Plugin<Project> {
         // Also update the release stage property for the pipeline
         if (project.properties.containsKey(releaseStagePropertyName)
                 && project.properties[releaseStagePropertyName] == "candidate") {
-            project.properties[releaseStagePropertyName] = "rc"
+            project.allprojects.each {
+                it.extensions.getByType(ExtraPropertiesExtension).set(releaseStagePropertyName, "rc")
+            }
         }
     }
 }
