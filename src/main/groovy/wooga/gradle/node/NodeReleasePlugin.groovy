@@ -238,15 +238,13 @@ class NodeReleasePlugin implements Plugin<Project> {
         return "${engine}_${(taskName - "node_")}"
     }
 
-    // TODO: Write test to make sure that release.stage property gets mapped from candidate to rc
     /**
      * Older versions of this plugin used the {@code candidate} task name for what we consider the {@code rc} task.
      * We need to replace any mentions of {@code candidate} with {@code rc} for our newer API.
      */
     protected static void aliasCandidateTasksToRc(Project project) {
 
-        println("Mapping beep boop")
-
+        // Rename the 'candidate' task, if present, to 'rc'
         List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
         if (cliTasks.contains(DEPRECATED_CANDIDATE_TASK_NAME)) {
             cliTasks.remove(DEPRECATED_CANDIDATE_TASK_NAME)
@@ -256,7 +254,7 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         def releaseStagePropertyName = "release.stage"
 
-        // Also update the release stage property for the pipeline
+        // Also rename 'candidate' to 'rc' for the release stage
         if (project.properties.containsKey(releaseStagePropertyName)
                 && project.properties[releaseStagePropertyName] == "candidate") {
             project.allprojects.each {

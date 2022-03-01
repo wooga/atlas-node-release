@@ -18,6 +18,7 @@
 package wooga.gradle.node
 
 import groovy.json.JsonSlurper
+import nebula.test.Integration
 import org.ajoberstar.grgit.Grgit
 import org.jfrog.artifactory.client.Artifactory
 import org.jfrog.artifactory.client.ArtifactoryClientBuilder
@@ -26,6 +27,7 @@ import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.Shared
 import spock.lang.Unroll
+
 
 class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
@@ -226,17 +228,5 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         "snapshot" | "0.1.0-master.1" | false         | true
         "rc"       | "0.1.0-rc.1"     | true          | true
         "final"    | "0.1.0"          | true          | false
-    }
-
-    def "converts task/release.stage candidate to rc"() {
-        given: "a gradle.properties file"
-        def gradleProperties = createFile("gradle.properties", projectDir)
-        gradleProperties << "release.stage=candidate"
-
-        when:
-        def result = runTasksSuccessfully("properties")
-
-        then:
-        result.standardOutput.contains("release.stage=rc")
     }
 }
