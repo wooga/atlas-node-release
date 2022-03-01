@@ -70,6 +70,8 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         extension = createExtension(project)
 
+        aliasCandidateTasksToRc(project)
+
         if (project == project.rootProject) {
             detectEngine(project)
             applyVersionPlugin(project)
@@ -79,7 +81,6 @@ class NodeReleasePlugin implements Plugin<Project> {
             configureGithubPublish(project)
         }
 
-        aliasCandidateTasksToRc(project)
 
         project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
         project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
@@ -237,16 +238,28 @@ class NodeReleasePlugin implements Plugin<Project> {
         return "${engine}_${(taskName - "node_")}"
     }
 
+    // TODO: Write test to make sure that release.stage property gets mapped from candidate to rc
     /**
      * Older versions of this plugin used the {@code candidate} task name for what we consider the {@code rc} task.
      * We need to replace any mentions of {@code candidate} with {@code rc} for our newer API.
      */
     protected static void aliasCandidateTasksToRc(Project project) {
+
+        println("Mapping beep boop")
+
         List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
         if (cliTasks.contains(DEPRECATED_CANDIDATE_TASK_NAME)) {
             cliTasks.remove(DEPRECATED_CANDIDATE_TASK_NAME)
             cliTasks.add(RC_TASK_NAME)
             project.rootProject.gradle.startParameter.setTaskNames(cliTasks)
+        }
+
+        def releaseStagePropertyName = "release.stage"
+
+        // Also update the release stage property for the pipeline
+        if (project.properties.containsKey(releaseStagePropertyName)
+                && project.properties[releaseStagePropertyName] == "candidate") {
+            project.properties[releaseStagePropertyName] = "rc"
         }
     }
 }
