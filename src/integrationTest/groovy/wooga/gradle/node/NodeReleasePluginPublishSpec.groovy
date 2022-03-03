@@ -18,6 +18,7 @@
 package wooga.gradle.node
 
 import groovy.json.JsonSlurper
+import nebula.test.Integration
 import org.ajoberstar.grgit.Grgit
 import org.jfrog.artifactory.client.Artifactory
 import org.jfrog.artifactory.client.ArtifactoryClientBuilder
@@ -26,6 +27,7 @@ import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.Shared
 import spock.lang.Unroll
+
 
 class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 

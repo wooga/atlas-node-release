@@ -23,6 +23,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -33,7 +34,6 @@ import wooga.gradle.node.tasks.NpmCredentialsTask
 import wooga.gradle.version.VersionPlugin
 import wooga.gradle.version.VersionPluginExtension
 import wooga.gradle.version.VersionScheme
-
 
 class NodeReleasePlugin implements Plugin<Project> {
 
@@ -72,6 +72,7 @@ class NodeReleasePlugin implements Plugin<Project> {
 
         if (project == project.rootProject) {
             detectEngine(project)
+            aliasCandidateTasksToRc(project)
             applyVersionPlugin(project)
             configureReleaseLifecycle(project)
             configureModifyPackageJsonVersionTask(project)
@@ -79,7 +80,6 @@ class NodeReleasePlugin implements Plugin<Project> {
             configureGithubPublish(project)
         }
 
-        aliasCandidateTasksToRc(project)
 
         project.tasks.create(MODIFY_PACKAGE_VERSION_TASK, ModifyPackageJsonTask.class)
         project.tasks.create(CREATE_CREDENTIALS_TASK, NpmCredentialsTask.class)
@@ -242,11 +242,23 @@ class NodeReleasePlugin implements Plugin<Project> {
      * We need to replace any mentions of {@code candidate} with {@code rc} for our newer API.
      */
     protected static void aliasCandidateTasksToRc(Project project) {
+
+        // Rename the 'candidate' task, if present, to 'rc'
         List<String> cliTasks = project.rootProject.gradle.startParameter.taskNames
         if (cliTasks.contains(DEPRECATED_CANDIDATE_TASK_NAME)) {
             cliTasks.remove(DEPRECATED_CANDIDATE_TASK_NAME)
             cliTasks.add(RC_TASK_NAME)
             project.rootProject.gradle.startParameter.setTaskNames(cliTasks)
+        }
+
+        def releaseStagePropertyName = "release.stage"
+
+        // Also rename 'candidate' to 'rc' for the release stage
+        if (project.properties.containsKey(releaseStagePropertyName)
+                && project.properties[releaseStagePropertyName] == "candidate") {
+            project.allprojects.each {
+                it.extensions.getByType(ExtraPropertiesExtension).set(releaseStagePropertyName, "rc")
+            }
         }
     }
 }
