@@ -9,9 +9,23 @@ class NodeReleasePluginIntegrationSpec extends IntegrationSpec {
             ${applyPlugin(NodeReleasePlugin)}    
         """.stripIndent()
     }
+    
+    @Unroll
+    def "converts #propertyName property value of #candidateName to #rcName in command line"() {
+        when:
+        def result = runTasksSuccessfully("properties", "-P", "release.stage=${candidateName}")
+
+        then:
+        result.standardOutput.contains("${propertyName}: ${rcName}")
+
+        where:
+        propertyName = "release.stage"
+        candidateName = "candidate"
+        rcName = "rc"
+    }
 
     @Unroll
-    def "converts #propertyName property value of #candidateName to #rcName"() {
+    def "converts #propertyName property value of #candidateName to #rcName in properties file"() {
         given: "a gradle.properties file"
         def gradleProperties = createFile("gradle.properties", projectDir)
         gradleProperties << "${propertyName}=${candidateName}"
