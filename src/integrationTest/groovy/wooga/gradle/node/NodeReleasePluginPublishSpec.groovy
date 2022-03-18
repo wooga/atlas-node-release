@@ -26,6 +26,7 @@ import org.jfrog.artifactory.client.model.RepoPath
 import org.junit.Rule
 import org.junit.contrib.java.lang.system.EnvironmentVariables
 import spock.lang.Shared
+import spock.lang.Timeout
 import spock.lang.Unroll
 
 
@@ -215,9 +216,15 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         result.wasExecuted("npm_publish")
         result.wasSkipped("githubPublish") != expectRelease
 
-        sleep(2000)
-        hasReleaseByName(version) == expectRelease
-        hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
+        // TODO: Perhaps implement time-out
+        withTimeout(15) {
+            hasReleaseByName(version) == expectRelease
+            hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
+        }
+
+//        sleep(4000)
+//        hasReleaseByName(version) == expectRelease
+//        hasPackageOnArtifactory(artifactoryRepoName, "${packageID}-${version}")
 
         if (expectRelease) {
             getReleaseByName(version).prerelease == prerelease
@@ -228,5 +235,13 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         "snapshot" | "0.1.0-master.1" | false         | true
         "rc"       | "0.1.0-rc.1"     | true          | true
         "final"    | "0.1.0"          | true          | false
+    }
+
+    def withTimeout(int seconds, float frequency, Closure closure){
+        int current = seconds
+        while (current >= 0) {
+            sleep()
+            def result = closure()
+        }
     }
 }
