@@ -177,6 +177,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         then:
         print(result.standardOutput)
         result.success
+        result.wasExecuted("node_run_build")
         result.wasExecuted("npm_publish")
         hasPackageOnArtifactory(artifactoryRepoName, packageNameForPackageJson())
         config.version == version
@@ -211,6 +212,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
         then:
         result.success
+        result.wasExecuted("node_run_build")
         result.wasExecuted("node_publish")
         result.wasExecuted("npm_publish")
         result.wasSkipped("githubPublish") != expectRelease
