@@ -177,6 +177,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
         then:
         print(result.standardOutput)
         result.success
+        result.standardOutput.indexOf("Task :node_run_build") < result.standardOutput.indexOf("Task :node_publish")
         result.wasExecuted("node_run_build")
         result.wasExecuted("npm_publish")
         hasPackageOnArtifactory(artifactoryRepoName, packageNameForPackageJson())
@@ -212,6 +213,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
 
         then:
         result.success
+        result.standardOutput.indexOf("Task :node_run_build") < result.standardOutput.indexOf("Task :node_publish")
         result.wasExecuted("node_run_build")
         result.wasExecuted("node_publish")
         result.wasExecuted("npm_publish")
