@@ -169,8 +169,8 @@ class NodeReleasePlugin implements Plugin<Project> {
         nodeBuildTask.dependsOn engineScopedBuildTask
         assembleTask.dependsOn nodeBuildTask
         // Set up publish lifecycle dependencies
-        nodePublishTask.dependsOn engineScopedPublishTask
-        publishTask.dependsOn nodeBuildTask, nodePublishTask
+        nodePublishTask.dependsOn nodeBuildTask, engineScopedPublishTask
+        publishTask.dependsOn nodePublishTask
         githubPublishTask.mustRunAfter nodePublishTask
 
         // TODO: Add custom tasks previously provided by the nebula release plugin
