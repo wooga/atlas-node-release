@@ -17,6 +17,9 @@
 
 plugins {
     id 'net.wooga.plugins' version '3.0.0-rc.2'
+    id 'net.wooga.snyk' version '0.10.0'
+    id "net.wooga.snyk-gradle-plugin" version "0.1.0"
+    id "net.wooga.cve-dependency-resolution" version "0.4.0"
 }
 
 group 'net.wooga.gradle'
