@@ -31,5 +31,11 @@ include 'shared'
 include 'api'
 include 'services:webservice'
 */
+pluginManagement {
+  repositories {
+    mavenCentral()
+    gradlePluginPortal()
+  }
+}
 
 rootProject.name = 'atlas-node-release'
