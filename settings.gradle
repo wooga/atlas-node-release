@@ -38,4 +38,4 @@ pluginManagement {
   }
 }
 
-rootProject.name = 'atlas-node-release'
+rootProject.name = 'node-release'
