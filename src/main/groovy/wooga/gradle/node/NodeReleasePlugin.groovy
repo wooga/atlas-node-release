@@ -26,6 +26,7 @@ import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.specs.Spec
+import org.gradle.internal.impldep.org.apache.commons.lang.SystemUtils
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import wooga.gradle.github.publish.GithubPublishPlugin
 import wooga.gradle.github.publish.tasks.GithubPublish
@@ -58,6 +59,7 @@ class NodeReleasePlugin implements Plugin<Project> {
     static final String YARN_LOCK_JSON = 'yarn.lock'
     static final String NPMRC = '.npmrc'
 
+    private Project project
     private NodeReleasePluginExtension extension
     private static Engine engine
 
@@ -68,7 +70,8 @@ class NodeReleasePlugin implements Plugin<Project> {
         project.pluginManager.apply(NodePlugin.class)
         project.pluginManager.apply(GithubPublishPlugin.class)
 
-        extension = createExtension(project)
+        this.project = project
+        this.extension = createExtension(project)
 
         if (project == project.rootProject) {
             detectEngine(project)
@@ -123,19 +126,24 @@ class NodeReleasePlugin implements Plugin<Project> {
         })
     }
 
-    private static void configureNpmCredentialsTasks(Project project, NodeReleasePluginExtension extension) {
-        project.tasks.withType(NpmCredentialsTask, new Action<NpmCredentialsTask>() {
-
-            @Override
-            void execute(NpmCredentialsTask npmCredentialsTask) {
-                npmCredentialsTask.group = TASK_GROUP
-                npmCredentialsTask.description = "create ${NPMRC} file"
-                npmCredentialsTask.npmUser.set(extension.npmUser)
-                npmCredentialsTask.npmPass.set(extension.npmPass)
-                npmCredentialsTask.npmAuthUrl.set(extension.npmAuthUrl)
-                npmCredentialsTask.npmrcFile.set(extension.npmrcFile)
+    private void configureNpmCredentialsTasks(Project project, NodeReleasePluginExtension extension) {
+        project.tasks.withType(NpmCredentialsTask).configureEach { task ->
+            task.group = TASK_GROUP
+            task.description = "create ${NPMRC} file"
+            task.npmUser.set(extension.npmUser)
+            task.npmPass.set(extension.npmPass)
+            task.npmAuthUrl.set(extension.npmAuthUrl)
+            task.npmrcFile.set(extension.npmrcFile)
+            task.onlyIf {
+                def hasCredentials  = project.provider{ task.npmUser.present && task.npmPass.present}
+                        .map(warnFalse{"username & password credentials not provided, skipping"})
+                        .orElse(true)
+                def hasAuthUrl  = project.provider{ task.npmAuthUrl.present}
+                        .map(warnFalse{"npm authentication url not provided, skipping"})
+                        .orElse(true)
+                return hasCredentials.get() && hasAuthUrl.get()
             }
-        })
+        }
     }
 
     /**
@@ -261,4 +269,13 @@ class NodeReleasePlugin implements Plugin<Project> {
             }
         }
     }
+
+    Closure<Boolean> warnFalse(Closure<String> message) {
+        return { it -> warnFalseCls(it, message())}
+    }
+
+    Closure<Boolean> warnFalseCls = { Boolean value, String message ->
+        if (!value) project.logger?.warn(message)
+        return value
+    }.memoize()
 }

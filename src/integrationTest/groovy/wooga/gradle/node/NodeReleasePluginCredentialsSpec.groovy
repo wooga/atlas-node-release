@@ -24,6 +24,8 @@ import spock.lang.Shared
 
 class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
 
+
+
     @Shared
     def version = "1.0.0"
 
@@ -39,10 +41,10 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables()
 
+
     Grgit git
 
     def setup() {
-
         environmentVariables.set("GRGIT_USER", testUserName)
         environmentVariables.set("GRGIT_PASS", testUserToken)
         environmentVariables.set('NODE_RELEASE_NPM_USER', npmUser)
@@ -70,6 +72,7 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         git.commit(message: 'initial commit')
         git.tag.add(name: 'v0.0.1')
         git.remote.add(name: "origin", url: "https://github.com/${testRepositoryName}.git")
+
     }
 
     def "run task of type NpmCredentialsTask with default properties"() {
@@ -79,8 +82,12 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         task test (type:wooga.gradle.node.tasks.NpmCredentialsTask) 
         """.stripIndent()
 
-        expect: "runs"
-        runTasksSuccessfully("test")
+        when:
+        def result = runTasksSuccessfully("test")
+
+        then:
+        !result.wasSkipped(":test")
+        result.wasExecuted(":test")
     }
 
     def "run task of type NpmCredentialsTask with task properties"() {
@@ -94,13 +101,16 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         }
         """.stripIndent()
 
-        expect: "runs"
-        runTasksSuccessfully("test")
+        when:
+        def result = runTasksSuccessfully("test")
+
+        then:
+        !result.wasSkipped(":test")
+        result.wasExecuted(":test")
     }
 
     def "run task :ensureNpmrc with project properties"() {
-
-        when: "no env vars set for npm login"
+        given: "no env vars set for npm login"
         environmentVariables.clear('NODE_RELEASE_NPM_USER', 'NODE_RELEASE_NPM_PASS')
 
         and:
@@ -114,19 +124,23 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         nodeRelease.npmAuthUrl=${npmAuthUrl}
         """.stripIndent().trim()
 
-        then: "runs"
-        runTasksSuccessfully("ensureNpmrc")
+        when:
+        def result = runTasksSuccessfully("ensureNpmrc")
+
+        then:
+        !result.wasSkipped(":ensureNpmrc")
+        result.wasExecuted(":ensureNpmrc")
     }
 
     def "run task :ensureNpmrc with extension.properties"() {
 
-        when: "no env vars set for npm login"
+        given: "no env vars set for npm login"
         environmentVariables.clear('NODE_RELEASE_NPM_USER', 'NODE_RELEASE_NPM_PASS')
 
         and:
         assert (!System.getenv("NODE_RELEASE_NPM_USER"))
         assert (!System.getenv("NODE_RELEASE_NPM_PASS"))
-        assert runTasksWithFailure("ensureNpmrc")
+        assert runTasks("ensureNpmrc").wasSkipped("ensureNpmrc")
 
         and: 'properties defined in properties file'
         buildFile << """nodeRelease {
@@ -136,8 +150,31 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         }
         """.stripIndent()
 
-        then: "runs"
-        runTasksSuccessfully("ensureNpmrc")
+        when:
+        def result = runTasksSuccessfully("ensureNpmrc")
+
+        then:
+        !result.wasSkipped(":ensureNpmrc")
+        result.wasExecuted(":ensureNpmrc")
+    }
+
+    def "skips task of type NpmCredentialsTask with no set credentials"() {
+
+        given: "a valid defined task"
+        buildFile << """                   
+        task test (type:wooga.gradle.node.tasks.NpmCredentialsTask) {
+            npmUser = null
+            npmPass = null
+            npmAuthUrl = null   
+        }
+        """.stripIndent()
+
+        when:
+        def result = runTasksSuccessfully("test")
+
+        then:
+        result.wasSkipped(":test")
+        result.wasExecuted(":test")
     }
 
     def "task of type NpmCredentialsTask writes .npmrc file"() {

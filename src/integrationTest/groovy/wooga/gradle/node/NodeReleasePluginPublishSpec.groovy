@@ -94,7 +94,7 @@ class NodeReleasePluginPublishSpec extends GithubIntegrationSpec {
             group = 'test'
             version = "$version"
             ${applyPlugin(NodeReleasePlugin)}    
-            node.version = '10.5.0'
+            node.version = '18.7.0'
             node.download = true
             
             github.repositoryName = '$testRepositoryName'
