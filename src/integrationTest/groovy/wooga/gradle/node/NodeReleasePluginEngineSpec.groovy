@@ -25,6 +25,9 @@ import spock.lang.Unroll
 
 class NodeReleasePluginEngineSpec extends GithubIntegrationSpec {
 
+    static def homeNpmRc = new File(System.getProperty("user.home"), ".npmrc")
+    static def tmpHomeNpmRc = new File(System.getProperty("user.home"), ".npmrc.tmp")
+
     @Shared
     def version = "1.0.0"
 
@@ -45,6 +48,7 @@ class NodeReleasePluginEngineSpec extends GithubIntegrationSpec {
     @Shared
     File packageJsonFile
 
+
     def setup() {
 
         environmentVariables.set("GRGIT_USER", testUserName)
@@ -64,14 +68,14 @@ class NodeReleasePluginEngineSpec extends GithubIntegrationSpec {
             group = 'test'
             version = "$version"
             ${applyPlugin(NodeReleasePlugin)}    
-            node.version = '10.5.0'
+            node.version = '18.7.0'
             node.download = true
         """.stripIndent()
 
         packageJsonFile = createFile('package.json')
         packageJsonFile.text = packageJsonContent([
                 "scripts"        : ["clean": "shx echo \"clean\"", "test": "shx echo \"test\"", "build": "shx echo \"build\""],
-                "devDependencies": ["shx": "^0.3.2"],
+                "devDependencies": ["shx": "^0.3.4"],
         ])
 
         git = Grgit.init(dir: projectDir)
@@ -87,9 +91,6 @@ class NodeReleasePluginEngineSpec extends GithubIntegrationSpec {
         if (lockfile) {
             createFile(lockfile)
         }
-
-        //and: "dependencies are installed"
-        //runTasksSuccessfully('npmSetup')
 
         when:
         "run task ${task}"
