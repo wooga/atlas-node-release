@@ -158,7 +158,7 @@ class NodeReleasePluginCredentialsSpec extends GithubIntegrationSpec {
         result.wasExecuted(":ensureNpmrc")
     }
 
-    def "skips task of type NpmCredentialsTask with no set credentials"() {
+    def "skips task of type NpmCredentialsTask when no credentials set"() {
 
         given: "a valid defined task"
         buildFile << """                   
