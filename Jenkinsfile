@@ -23,7 +23,7 @@
                   usernamePassword(credentialsId: 'github_integration', passwordVariable: 'githubPassword', usernameVariable: 'githubUser'),
                   usernamePassword(credentialsId: 'github_integration_2', passwordVariable: 'githubPassword2', usernameVariable: 'githubUser2'),
                   usernamePassword(credentialsId: 'npm_test_credentials', passwordVariable: 'npm_test_credentials_pass', usernameVariable: 'npm_test_credentials_user'),
-                  string(credentialsId: 'atlas_plugins_snyk_token', variable: 'SNYK_TOKEN')]) {
+                  string(credentialsId: 'snyk-wooga-frontend-integration-token', variable: 'SNYK_TOKEN')]) {
 
      def testEnvironment = [
                                 'macos' : [
